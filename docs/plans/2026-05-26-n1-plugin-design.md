@@ -45,7 +45,8 @@ n1/
 │   └── ticket-reader.md
 ├── hooks/
 │   ├── hooks.json
-│   └── session-start.sh
+│   ├── session-start.cmd    # Polyglot wrapper (Windows + Unix)
+│   └── session-start.sh     # Actual implementation
 └── CLAUDE.md
 ```
 
@@ -76,7 +77,7 @@ n1/
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.cmd\"",
             "async": true
           }
         ]
@@ -86,8 +87,40 @@ n1/
 }
 ```
 
+**Cross-platform execution:**
+
+Claude Code on Windows cannot run `.sh` directly. Use a polyglot `.cmd` wrapper
+(same pattern as Superpowers):
+
+```
+hooks/
+├── hooks.json              # Points to .cmd wrapper
+├── session-start.cmd       # Polyglot: Windows CMD + Unix passthrough
+└── session-start.sh        # Actual logic (pure bash)
+```
+
+`session-start.cmd` dispatches to `session-start.sh` via Git Bash on Windows,
+or runs it directly on Unix. Verified pattern from Superpowers 4.2.0.
+
+**Hook output format (required by Claude Code):**
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "...injected into Claude context..."
+  }
+}
+```
+
+**Project root detection:**
+
+`CLAUDE_PLUGIN_ROOT` points to the plugin directory, not the project.
+Use `$PWD` to detect the project root — Claude Code runs hooks from the
+project working directory. Verify empirically in Phase 0.
+
 **session-start.sh behavior:**
-- If `.n1/n1.config.json` exists in project:
+- If `$PWD/.n1/n1.config.json` exists:
   ```
   N1 is configured for this project.
   For task work, PR creation, and code review — always prefer N1 skills
@@ -272,6 +305,27 @@ TRACKER UPDATE
 MEMORY FINALIZE
   → update overview (status: Done)
 ```
+
+### Skill-to-skill invocation pattern
+
+n1-start invokes Superpowers and N1 sub-skills via **declarative text instructions**
+in SKILL.md body. Claude reads these instructions and calls the `Skill` tool
+automatically. No programmatic API between skills.
+
+Pattern (verified from Superpowers 4.2.0):
+```markdown
+**REQUIRED SUB-SKILL:** Use superpowers:brainstorming to refine the scope.
+```
+
+For N1 internal skills:
+```markdown
+**REQUIRED SUB-SKILL:** Use n1:n1-review to run the review loop.
+**REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
+```
+
+Claude resolves `n1:n1-review` → Skill tool call → loads SKILL.md → follows it.
+This is the same mechanism Superpowers uses for chaining (e.g., brainstorming →
+writing-plans → executing-plans → finishing-a-development-branch).
 
 ## 8. Skill: n1-pr (PR Creation)
 

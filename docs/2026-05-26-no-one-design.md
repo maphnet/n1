@@ -1,7 +1,7 @@
 # No-One (n1) — Design Document
 
 > **Дата:** 2026-05-26
-> **Статус:** Draft
+> **Статус:** Superseded by [Implementation Design](plans/2026-05-26-n1-plugin-design.md)
 > **Автор:** Tech Lead + AI brainstorm session
 
 ---
