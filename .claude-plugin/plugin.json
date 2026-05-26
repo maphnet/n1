@@ -1,0 +1,10 @@
+{
+  "name": "n1",
+  "description": "AI-driven development orchestrator. No one writes the code.",
+  "version": "0.1.0",
+  "author": { "name": "N1 Team" },
+  "license": "MIT",
+  "dependencies": [
+    { "name": "superpowers", "version": "^4.0" }
+  ]
+}
