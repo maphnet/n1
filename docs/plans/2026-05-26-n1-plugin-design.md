@@ -24,10 +24,10 @@ N1 is an orchestration layer over Superpowers plugin for Claude Code. It adds:
 | Tracker routing | Config-driven (n1.config.json presets) | Single source of truth, populated by n1-init |
 | Commands | No wrapper commands — skills only | Auto-discovered as /n1:n1-start etc. |
 | Session hook | Light — priority + availability (3 lines max) | Don't pollute context window |
-| Memory structure | Per-step files + overview .md | Context focus, pipeline handoff, resume precision |
+| Memory structure | Semantic-named files + overview .md + explicit dependency map | Context focus, pipeline handoff, non-linear flow support |
 | `.n1/` directory | Fully gitignored | Tool state ≠ project state |
 | Review | Mandatory loop before PR (min 1 pass) | request → receive → fix → repeat |
-| Agents | ticket-reader (Sonnet) for MVP | Specialized, predictable, cost-optimized |
+| Agents | ticket-reader inline for MVP, Sonnet agent for large tickets later | Avoid spawn overhead for typical tickets; extract when 10K+ tokens justified |
 | Dogfooding | ASAP — use N1 on N1 from Phase 1 | Find friction early |
 
 ## 3. Plugin Structure
@@ -109,6 +109,7 @@ n1/
     "projectKey": "TRID",
     "operations": {
       "readTicket": "getJiraIssue",
+      "getTransitions": "getTransitionsForJiraIssue",
       "moveStatus": "transitionJiraIssue",
       "addComment": "addCommentToJiraIssue",
       "search": "searchJiraIssuesUsingJql",
@@ -143,33 +144,46 @@ n1/
 
 | Tracker | mcp value | operations |
 |---------|-----------|------------|
-| Jira | `plugin_atlassian_atlassian` | getJiraIssue, transitionJiraIssue, addCommentToJiraIssue, searchJiraIssuesUsingJql, createJiraIssue |
-| YouTrack | `youtrack` | get_issue, update_issue, add_issue_comment, search_issues, create_issue |
+| Jira | `plugin_atlassian_atlassian` | getJiraIssue, getTransitionsForJiraIssue, transitionJiraIssue, addCommentToJiraIssue, searchJiraIssuesUsingJql, createJiraIssue |
+| YouTrack | `youtrack` | get_issue, get_issue_comments, update_issue, add_issue_comment, search_issues, create_issue |
 | None | `null` | skip all tracker operations |
 
-## 6. Memory Structure (per-project, gitignored)
+## 6. Memory Structure (per-project, fully gitignored)
 
 ```
 .n1/
 ├── n1.config.json
 ├── memory/
 │   └── TRID-510/
-│       ├── TRID-510.md           # Overview: status, progress, key decisions
-│       ├── 01-ticket.md          # ticket-reader output
-│       ├── 02-brainstorm.md      # scope, AC, approach
-│       ├── 03-plan.md            # reference to docs/plans/ + summary for next step
-│       ├── 04-implementation.md  # per-subtask results
-│       └── 05-review.md          # review iterations, findings, final result
+│       ├── overview.md     # Status, progress, key decisions (structured frontmatter)
+│       ├── ticket.md       # Ticket fetch output
+│       ├── brainstorm.md   # Scope, AC, approach
+│       ├── plan.md         # Reference to docs/plans/ + summary
+│       ├── implementation.md  # Implementation results summary
+│       └── review.md       # Latest review results
 ├── decisions/
 └── telemetry/
 ```
 
-### Overview file (TRID-510.md)
+`.n1/` is fully gitignored — tool state never committed to project repos.
+ADRs that matter to the team belong in `docs/decisions/`, not in `.n1/`.
+
+**File naming:** Semantic names without numeric prefixes. Optional steps simply don't
+have a file. Additional steps (debug, extra review iterations) add files without
+renumbering. Review iterations use `-r1`, `-r2` suffix.
+
+### Overview file (overview.md)
 
 ```markdown
-# TRID-510: CSV Export Users
+---
+ticket: TRID-510
+step: implementation
+substep: 3
+iteration: 1
+last_updated: 2026-05-26T14:30:00
+---
 
-## Status: In Progress — Implementation
+# TRID-510: CSV Export Users
 
 ## Progress
 - [x] Ticket read
@@ -187,15 +201,28 @@ n1/
 - (resolved) Filter scope → confirmed: role + created_at
 ```
 
+### Step dependency map
+
+Each step declares which files it reads (not just the previous step):
+
+| Step | Reads | Writes |
+|------|-------|--------|
+| ticket | — | `ticket.md` |
+| brainstorm | `ticket.md` | `brainstorm.md` |
+| plan | `ticket.md`, `brainstorm.md` | `plan.md` |
+| implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
+| review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
+| pr | `overview.md`, `review.md` | — |
+
 ### Step file handoff pattern
 
 Each step:
-1. Reads previous step's output file
+1. Reads files from its dependency list (see map above)
 2. Does its work (via Superpowers or inline)
 3. Writes its own output file
-4. Updates overview (checkbox + key decisions)
+4. Updates overview (checkbox + key decisions + frontmatter)
 
-Resume: read overview → determine current step → load previous step file → continue.
+Resume: read overview frontmatter → determine current step → load dependency files → continue.
 
 ## 7. Skill: n1-start (Core Orchestrator)
 
@@ -208,27 +235,31 @@ Resume: read overview → determine current step → load previous step file →
 
 ```
 INPUT
-  ├── matches tracker prefix? → spawn n1:ticket-reader → 01-ticket.md
+  ├── matches tracker prefix? → fetch ticket inline → ticket.md
   └── brain dump → use as-is
 
-  ├── memory exists? → read overview → resume from last step
+  ├── memory exists? → read overview frontmatter → resume from current step
   └── no memory → create .n1/memory/<ID>/, start fresh
 
 BRAINSTORM (superpowers:brainstorming)
-  → output: 02-brainstorm.md
+  → reads: ticket.md
+  → output: brainstorm.md
   ├── simple → skip to IMPLEMENT
   └── complex ↓
 
 PLAN (superpowers:writing-plans)
-  → output: 03-plan.md (ref to docs/plans/)
+  → reads: ticket.md, brainstorm.md
+  → output: plan.md (ref to docs/plans/)
   → CHECKPOINT: Tech Lead approves
 
 IMPLEMENT (superpowers:subagent-driven-development)
-  → output: 04-implementation.md
+  → reads: brainstorm.md, plan.md
+  → output: implementation.md (per subtask)
   → confidence-based escalation during work
 
 REVIEW LOOP (/n1:n1-review)
-  → output: 05-review.md
+  → reads: ticket.md, brainstorm.md, implementation.md
+  → output: review.md (overwritten each iteration)
   → request → receive (if critical) → fix → repeat until clean pass
 
 PR (/n1:n1-pr)
@@ -254,7 +285,7 @@ MEMORY FINALIZE
 COLLECT
   → git diff, git log vs defaultBranch
   → read n1.config.json
-  → if ticket known: read overview .md
+  → if ticket known: read overview.md
 
 GENERATE
   → PR title (from ticket title or commit summary)
@@ -344,21 +375,23 @@ CONFIRM
   → summary → "N1 is ready."
 ```
 
-## 11. Agent: ticket-reader
+## 11. Ticket Reading
 
-```yaml
-name: ticket-reader
-description: Fetch and distill a tracker ticket into a structured summary
-model: sonnet
-```
+### MVP: Inline in orchestrator
+
+For MVP, ticket reading is performed inline by the n1-start orchestrator (Opus).
+Typical tickets are 2-5K tokens — the spawn overhead of a separate agent is not
+justified at this scale.
 
 **Behavior:**
 1. Read `.n1/n1.config.json` → get `tracker.mcp` + `operations.readTicket`
 2. Call MCP tool: `mcp__<tracker.mcp>__<operations.readTicket>`
-3. Extract: title, description, AC, priority, status, key comments (last 5)
-4. Return fixed-format markdown summary
+3. For YouTrack: also call `mcp__<tracker.mcp>__<operations.readComments>` (comments are separate)
+4. For Jira: also call `mcp__<tracker.mcp>__<operations.getTransitions>` (cache available transitions)
+5. Extract: title, description, AC, priority, status, key comments (last 5)
+6. Write `ticket.md` in fixed-format markdown
 
-**Output format:**
+**Output format (ticket.md):**
 ```markdown
 ## Ticket: TRID-510
 **Title:** CSV Export Users
@@ -375,6 +408,18 @@ model: sonnet
 - @user (date): "comment"
 ```
 
+### Future: Sonnet agent for large tickets
+
+Extract ticket reading into a dedicated Sonnet agent when:
+- Tickets consistently exceed 10K tokens of raw content (50+ comments, attached docs)
+- Context pressure from ticket reading measurably impacts orchestrator performance
+
+```yaml
+name: ticket-reader
+description: Fetch and distill a tracker ticket into a structured summary
+model: sonnet
+```
+
 ## 12. Implementation Order
 
 ```
@@ -388,7 +433,7 @@ Phase 1 — n1-init
   └── Dogfood: run on N1 repo
 
 Phase 2 — n1-review
-  ├── skills/n1-review/SKILL.md + agents/ticket-reader.md
+  ├── skills/n1-review/SKILL.md
   ├── Test: review N1 branches
   └── Dogfood: review every N1 commit
 
@@ -417,11 +462,12 @@ Phase 4 — n1-start
 
 ## 14. Context Management Strategy
 
-- **n1-start is a lightweight controller** — delegates all heavy work
+- **n1-start is a lightweight controller** (~5-10K tokens working context) — delegates all heavy work
 - **Subagent isolation via Superpowers** — each implementation task gets fresh 200K context
-- **Per-step files** — each step loads only previous step's output, not full history
-- **Session-start hook re-fires on compact** — priority context survives compaction
-- **ticket-reader as Sonnet agent** — large tickets processed outside main context
+- **Explicit dependency map** — each step loads only the files it needs (see §6 dependency map), not full history
+- **Active handoff between steps** — after each major step, save output to file and summarize key decisions before invoking next skill; don't let context accumulate passively
+- **Session-start hook re-fires on compact** — priority context survives compaction (verify empirically in Phase 0)
+- **Ticket reading inline for MVP** — avoids agent spawn overhead; extract to Sonnet agent only when tickets consistently exceed 10K tokens
 
 ## 15. Escalation Model
 

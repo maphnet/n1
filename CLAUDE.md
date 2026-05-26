@@ -52,10 +52,10 @@ n1/
 ## Architecture Principles
 
 - **Orchestration over reimplementation** — use Superpowers for heavy lifting
-- **Specialized agents** — each agent does limited scope well and predictably
-- **Model optimization** — Sonnet for mechanical tasks, Opus for judgment
-- **Per-step memory files** — pipeline handoff pattern between workflow steps
-- **`.n1/` is ephemeral** — tool state never committed to project repos
+- **Specialized agents** — Sonnet for mechanical tasks (ticket reading), Opus for judgment
+- **Inline fallback** — orchestrator can do ticket reading inline for simple cases
+- **Semantic memory files** — explicit dependency map between workflow steps, no numeric prefixes
+- **`.n1/` is ephemeral** — fully gitignored, tool state never committed to project repos
 - **Tracker routing via config** — `n1.config.json` holds MCP tool mappings
 
 ## Git
