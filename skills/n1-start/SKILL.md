@@ -55,7 +55,7 @@ Read the tracker ticket and write a structured summary.
 
 1. Read `.n1/n1.config.json` → `tracker.mcp` and `tracker.operations`
 2. Call MCP tool: `mcp__<tracker.mcp>__<tracker.operations.readTicket>` with the ticket ID
-3. For YouTrack: also call `mcp__<tracker.mcp>__get_issue_comments`
+3. For YouTrack: also call `mcp__<tracker.mcp>__<tracker.operations.getComments>`
 4. For Jira: also call `mcp__<tracker.mcp>__<tracker.operations.getTransitions>`
 5. Distill into structured format and write to `.n1/memory/<ID>/ticket.md`:
 

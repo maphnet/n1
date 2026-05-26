@@ -17,7 +17,7 @@ You will receive:
 
 1. **Fetch the ticket** using the appropriate MCP tool:
    - Call `mcp__<trackerMcp>__<operations.readTicket>` with the ticket ID
-   - For YouTrack: also call `mcp__<trackerMcp>__get_issue_comments` (comments are a separate endpoint)
+   - For YouTrack: also call `mcp__<trackerMcp>__<operations.getComments>` (comments are a separate endpoint)
    - For Jira: also call `mcp__<trackerMcp>__<operations.getTransitions>` to cache available status transitions
 
 2. **Distill** the raw ticket into the output format below. Focus on:
