@@ -58,6 +58,95 @@ n1/
 - **`.n1/` is ephemeral** — fully gitignored, tool state never committed to project repos
 - **Tracker routing via config** — `n1.config.json` holds MCP tool mappings
 
+## Skills and Invocation
+
+Skills invoke each other via declarative text instructions in SKILL.md body:
+```
+**REQUIRED SUB-SKILL:** Use superpowers:brainstorming to refine the scope.
+**REQUIRED SUB-SKILL:** Use n1:n1-review to run the review loop.
+```
+Claude resolves `plugin:skill-name` → Skill tool call → loads SKILL.md → follows it.
+
+### Superpowers Usage Map
+
+| N1 Step | Superpowers Skill | Purpose |
+|---------|-------------------|---------|
+| Brainstorm | `superpowers:brainstorming` | Iterative scope refinement |
+| Plan | `superpowers:writing-plans` | Detailed implementation plan |
+| Implement | `superpowers:subagent-driven-development` | TDD + subagent per task |
+| Review (request) | `superpowers:requesting-code-review` | Deep architectural review |
+| Review (receive) | `superpowers:receiving-code-review` | Systematic fix of findings |
+| Debug (if needed) | `superpowers:systematic-debugging` | Root cause analysis |
+
+## Memory Structure (per-project, gitignored)
+
+```
+.n1/
+├── n1.config.json          # Project configuration
+├── memory/
+│   └── <ticket-id>/
+│       ├── overview.md     # Status, progress, key decisions (structured frontmatter)
+│       ├── ticket.md       # Ticket fetch output or brain dump
+│       ├── brainstorm.md   # Scope, AC, approach
+│       ├── plan.md         # Reference to docs/plans/ + summary
+│       ├── implementation.md  # Implementation results
+│       └── review.md       # Latest review results
+├── decisions/              # ADRs (future)
+└── telemetry/              # Execution logs (future)
+```
+
+### Step Dependency Map
+
+Each step reads ONLY its declared dependencies, not full history:
+
+| Step | Reads | Writes |
+|------|-------|--------|
+| ticket | — | `ticket.md` |
+| brainstorm | `ticket.md` | `brainstorm.md` |
+| plan | `ticket.md`, `brainstorm.md` | `plan.md` |
+| implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
+| review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
+| pr | `overview.md`, `review.md` | — |
+
+## n1.config.json Schema
+
+```json
+{
+  "version": "0.1.0",
+  "tracker": {
+    "mcp": "plugin_atlassian_atlassian | youtrack | null",
+    "prefix": "TRID",
+    "projectKey": "TRID",
+    "operations": { "readTicket": "...", "moveStatus": "...", "addComment": "...", "search": "...", "createIssue": "..." },
+    "statuses": { "todo": "To Do", "inProgress": "In Progress", "review": "In Review", "done": "Done" }
+  },
+  "git": { "defaultBranch": "main", "branchPattern": "{prefix}-{id}" },
+  "escalation": { "checkpoints": ["plan", "pr"], "alwaysAskOn": ["security", "architecture", "public-api"] },
+  "review": { "minPasses": 1 },
+  "memory": { "ticketContext": true, "decisions": true }
+}
+```
+
+### Tracker Presets (populated by n1-init)
+
+| Tracker | mcp | readTicket | moveStatus | addComment | getComments |
+|---------|-----|------------|------------|------------|-------------|
+| Jira | `plugin_atlassian_atlassian` | `getJiraIssue` | `transitionJiraIssue` | `addCommentToJiraIssue` | — (inline) |
+| YouTrack | `youtrack` | `get_issue` | `update_issue` | `add_issue_comment` | `get_issue_comments` |
+
+## Escalation Model
+
+**Fixed checkpoints (always):**
+- After plan → Tech Lead approves
+- After PR creation → Tech Lead reviews
+
+**Confidence-based (during implementation):**
+- Low confidence + High blast radius → STOP, ask Tech Lead
+- Low confidence + Low blast radius → proceed, note in memory
+- High confidence → full autonomy
+
+**Always escalate:** security, architecture decisions, public API changes.
+
 ## Git
 
 - Default branch: main
