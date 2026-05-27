@@ -1,103 +1,60 @@
-# N1 (No-One) — Claude Code Plugin
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+See [README.md](README.md) for user-facing documentation: installation, quick start, skill usage examples, and full feature overview.
 
 ## Language Policy
 
 ALL code, documentation, skills, agents, hooks, comments, and commit messages MUST be in English.
 Russian is prohibited in any committed file.
 
+## What This Is
+
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, brainstorm, plan, implement, review, PR) by delegating to [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills. It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, delegate heavy work to Superpowers via subagents, and write results back to per-ticket memory.
+
 ## Stack
 
-- **Platform:** Claude Code Plugin (marketplace distribution)
-- **Runtime:** Bash (hooks), Markdown (skills, agents)
-- **Dependency:** Superpowers plugin ^4.0 (declared in plugin.json)
-- **No npm dependencies, no Node.js programs**
-
-## Project Structure
-
-```
-n1/
-├── .claude-plugin/
-│   └── plugin.json             # Plugin manifest
-├── skills/
-│   ├── n1-start/SKILL.md      # Core orchestrator
-│   ├── n1-pr/SKILL.md         # PR creation
-│   ├── n1-review/SKILL.md     # Code review (loop + advisory)
-│   └── n1-init/SKILL.md       # Project setup wizard
-├── agents/
-│   └── ticket-reader.md       # Sonnet — ticket fetch + distill
-├── hooks/
-│   ├── hooks.json              # Hook declarations
-│   └── session-start.sh       # Light context injection
-├── docs/
-│   └── plans/                  # Design documents
-└── CLAUDE.md                   # This file
-```
+- **Runtime:** Bash (hooks), Markdown (skills, agents) — no npm, no Node.js
+- **Plugin manifest:** `.claude-plugin/plugin.json`
+- **Dependency:** Superpowers plugin ^4.0
 
 ## Testing
 
-- **Local:** `claude --plugin-dir C:\Dev\n1` from any test project
-- **Reload:** `/reload-plugins` after skill changes (no restart needed)
+- **Local dev:** `claude --plugin-dir C:\Dev\n1` from any test project
+- **Reload skills:** `/reload-plugins` (no restart needed)
 - **Always test on a separate repo before committing**
-- **Dogfooding:** use N1 skills on N1 repo as soon as they're functional
+- **Dogfooding:** use N1 skills on the N1 repo itself
 
 ## Conventions
 
-- Skills: `skills/<name>/SKILL.md` — auto-discovered by Claude Code
-- Agents: `agents/<name>.md` — frontmatter with name, description, model
-- Hooks: `hooks/hooks.json` — event declarations
+- Skills: `skills/<name>/SKILL.md` — auto-discovered, invoked as `/n1:<skill-name>`
+- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`
+- Hooks: `hooks/hooks.json` — event declarations, scripts in `hooks/`
 - One concern per file
-- Frontmatter: `name` + `description` required for all skills/agents
-- No wrapper commands — skills are accessed as `/n1:<skill-name>`
+- Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives
+- No Co-Authored-By trailers in commits
 
-## Architecture Principles
+## Architecture
 
-- **Orchestration over reimplementation** — use Superpowers for heavy lifting
-- **Specialized agents** — Sonnet for mechanical tasks (ticket reading), Opus for judgment
-- **Inline fallback** — orchestrator can do ticket reading inline for simple cases
-- **Semantic memory files** — explicit dependency map between workflow steps, no numeric prefixes
-- **`.n1/` is ephemeral** — fully gitignored, tool state never committed to project repos
-- **Tracker routing via config** — `n1.config.json` holds MCP tool mappings
+### Orchestration Pattern
 
-## Skills and Invocation
+Skills are lightweight controllers that delegate all heavy work:
 
-Skills invoke each other via declarative text instructions in SKILL.md body:
-```
-**REQUIRED SUB-SKILL:** Use superpowers:brainstorming to refine the scope.
-**REQUIRED SUB-SKILL:** Use n1:n1-review to run the review loop.
-```
-Claude resolves `plugin:skill-name` → Skill tool call → loads SKILL.md → follows it.
+| N1 Skill | Delegates To | Purpose |
+|----------|-------------|---------|
+| n1-start | brainstorming, writing-plans, subagent-driven-development | Full pipeline |
+| n1-review | requesting-code-review, receiving-code-review | Review + fix loop |
+| n1-pr | (inline: git, gh, MCP) | Push, create PR, update tracker |
+| n1-init | (inline: analysis + prompts) | Project setup wizard |
 
-### Superpowers Usage Map
+All Superpowers calls use the `superpowers:` prefix. Each subagent gets fresh context — the orchestrator never accumulates full history.
 
-| N1 Step | Superpowers Skill | Purpose |
-|---------|-------------------|---------|
-| Brainstorm | `superpowers:brainstorming` | Iterative scope refinement |
-| Plan | `superpowers:writing-plans` | Detailed implementation plan |
-| Implement | `superpowers:subagent-driven-development` | TDD + subagent per task |
-| Review (request) | `superpowers:requesting-code-review` | Deep architectural review |
-| Review (receive) | `superpowers:receiving-code-review` | Systematic fix of findings |
-| Debug (if needed) | `superpowers:systematic-debugging` | Root cause analysis |
+### Per-Ticket Memory (`.n1/`)
 
-## Memory Structure (per-project, gitignored)
+The `.n1/` directory is **ephemeral and gitignored**. It lives in target projects, not in this repo.
 
-```
-.n1/
-├── n1.config.json          # Project configuration
-├── memory/
-│   └── <ticket-id>/
-│       ├── overview.md     # Status, progress, key decisions (structured frontmatter)
-│       ├── ticket.md       # Ticket fetch output or brain dump
-│       ├── brainstorm.md   # Scope, AC, approach
-│       ├── plan.md         # Reference to docs/plans/ + summary
-│       ├── implementation.md  # Implementation results
-│       └── review.md       # Latest review results
-├── decisions/              # ADRs (future)
-└── telemetry/              # Execution logs (future)
-```
-
-### Step Dependency Map
-
-Each step reads ONLY its declared dependencies, not full history:
+Each step reads ONLY its declared dependencies:
 
 | Step | Reads | Writes |
 |------|-------|--------|
@@ -108,47 +65,26 @@ Each step reads ONLY its declared dependencies, not full history:
 | review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
 | pr | `overview.md`, `review.md` | — |
 
-## n1.config.json Schema
+### Tracker Routing
 
-```json
-{
-  "version": "0.1.0",
-  "tracker": {
-    "mcp": "plugin_atlassian_atlassian | youtrack | null",
-    "prefix": "TRID",
-    "projectKey": "TRID",
-    "operations": { "readTicket": "...", "moveStatus": "...", "addComment": "...", "search": "...", "createIssue": "..." },
-    "statuses": { "todo": "To Do", "inProgress": "In Progress", "review": "In Review", "done": "Done" }
-  },
-  "git": { "defaultBranch": "main", "branchPattern": "{prefix}-{id}" },
-  "escalation": { "checkpoints": ["plan", "pr"], "alwaysAskOn": ["security", "architecture", "public-api"] },
-  "review": { "minPasses": 1 },
-  "memory": { "ticketContext": true, "decisions": true }
-}
-```
+Tracker MCP tool names are never hardcoded — they're resolved at runtime from `n1.config.json` operations map. Two presets exist:
 
-### Tracker Presets (populated by n1-init)
+| Tracker | mcp value | Key operations |
+|---------|-----------|---------------|
+| Jira | `plugin_atlassian_atlassian` | `getJiraIssue`, `transitionJiraIssue`, `addCommentToJiraIssue`, `getTransitionsForJiraIssue` |
+| YouTrack | `youtrack` | `get_issue`, `update_issue`, `add_issue_comment`, `get_issue_comments` |
 
-| Tracker | mcp | readTicket | moveStatus | addComment | getComments |
-|---------|-----|------------|------------|------------|-------------|
-| Jira | `plugin_atlassian_atlassian` | `getJiraIssue` | `transitionJiraIssue` | `addCommentToJiraIssue` | — (inline) |
-| YouTrack | `youtrack` | `get_issue` | `update_issue` | `add_issue_comment` | `get_issue_comments` |
+### Session Start Hook
 
-## Escalation Model
+`hooks/session-start.sh` fires on session start/resume/clear/compact. It checks for `.n1/n1.config.json` in the working directory and injects context telling Claude to prefer N1 skills.
 
-**Fixed checkpoints (always):**
-- After plan → Tech Lead approves
-- After PR creation → Tech Lead reviews
+### Escalation Model
 
-**Confidence-based (during implementation):**
-- Low confidence + High blast radius → STOP, ask Tech Lead
-- Low confidence + Low blast radius → proceed, note in memory
-- High confidence → full autonomy
-
-**Always escalate:** security, architecture decisions, public API changes.
+Fixed checkpoints: after plan (Tech Lead approves) and after PR creation (Tech Lead reviews).
+Confidence-based: low confidence + high blast radius = stop and ask.
+Always escalate: security, architecture, public API changes.
 
 ## Git
 
-- Default branch: main
-- Commit messages: imperative mood, English
-- No Co-Authored-By trailers
+- Default branch: `main`
+- Commit style: imperative mood, English
