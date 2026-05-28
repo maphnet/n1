@@ -12,6 +12,13 @@ Single entry point for all task work. Accepts a ticket ID or a brain dump, then 
 
 **Announce at start:** "I'm using the n1-start skill to work on this task."
 
+## Prerequisites
+
+Check if `.n1/n1.config.json` exists on disk (use Read or Bash `test -f`, NOT git commands — `.n1/` is gitignored):
+
+- **If missing:** Tell the user: "N1 is not configured for this project. Would you like to run `/n1:n1-init` to set it up?" **Wait for response.** If yes — invoke `/n1:n1-init`, then resume. If no — **STOP.**
+- **If exists:** Continue.
+
 ## Input Parsing
 
 The user provides one of:
