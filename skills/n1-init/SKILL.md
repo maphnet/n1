@@ -156,12 +156,12 @@ Detect automatically:
 
 ## Step 5: Review Configuration
 
-Ask: **"Minimum review passes before PR creation? (default: 1)"**
+Ask: **"Minimum consecutive clean review passes before PR creation? (default: 1)"**
 
 ```json
 {
   "review": {
-    "minPasses": 1
+    "minCleanPasses": 1
   }
 }
 ```

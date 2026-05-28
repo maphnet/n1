@@ -11,7 +11,7 @@ Russian is prohibited in any committed file.
 
 ## What This Is
 
-N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR) using 7 specialized agent personas with scoped tools and configurable models. It delegates interactive work to [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills and autonomous work to its own agents. It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or delegate to Superpowers, and write results back to per-ticket memory.
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR). It uses a **hybrid delegation model**: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
 
 ## Stack
 
@@ -29,7 +29,7 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 ## Conventions
 
 - Skills: `skills/<name>/SKILL.md` — auto-discovered, invoked as `/n1:<skill-name>`
-- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` for tool scoping
+- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` (comma-separated list of allowed tools, advisory for LLM scoping — not structurally enforced by Claude Code)
 - Hooks: `hooks/hooks.json` — event declarations, scripts in `hooks/`
 - One concern per file
 - Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives

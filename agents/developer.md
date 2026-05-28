@@ -1,6 +1,6 @@
 ---
 name: developer
-description: "Implement features and fix code. Used as persona context for superpowers:subagent-driven-development during implementation, and spawned directly for review fix cycles."
+description: "Implement features and fix code. Handles both plan-based implementation and review fix cycles."
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---

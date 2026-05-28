@@ -61,7 +61,7 @@ Each step reads ONLY the files listed in its dependency column, not the full his
 
 ## Pipeline Steps
 
-Steps 3 (Brainstorm) and 4 (Plan checkpoint) are **INTERACTIVE** — they pause for user input. All other steps run autonomously.
+Steps 3 (Brainstorm) and 4 (Plan checkpoint) are **INTERACTIVE** — Superpowers handles user interaction during brainstorming, and the orchestrator pauses for explicit plan approval. All other steps run autonomously.
 
 ### 1. REQUIREMENTS ANALYSIS
 
@@ -204,7 +204,12 @@ Resolve model for `developer`.
 Pass to subagent-driven-development:
 - The implementation plan from `plan.md` (or brainstorm.md for simple tasks)
 - Codebase context
-- Developer persona context: read the **Constraints section** from `agents/developer.md` and include it as additional guidance: "When dispatching implementer subagents, include these constraints as additional role guidance for each implementer."
+- Developer persona constraints (include these as additional role guidance for each implementer subagent):
+  - Follow existing patterns — do not introduce new architectural patterns or dependencies
+  - Every fix must have a corresponding test (or verify existing tests cover it)
+  - Commit each logical fix separately (atomic commits)
+  - If a fix requires architectural changes, report it as "needs escalation" instead of implementing
+  - Do not refactor surrounding code — fix only what the finding describes
 - If config has a model override for developer, instruct: "Use model `<model>` for implementer subagents." (Note: this is best-effort — the orchestrator passes the instruction as text, but cannot structurally enforce the model parameter in SDD's subagent dispatch.)
 
 **SDD overrides (IMPORTANT):**
@@ -316,28 +321,17 @@ After developer returns:
   "After 3 review cycles, these findings remain unresolved: [list]. Please advise."
 
 If both reviewers returned PASS:
-- Check review count vs `review.minPasses` from config
-- If passes < minPasses: go back to Step 7
-- If passes >= minPasses: proceed
+- Check review count vs `review.minCleanPasses` from config (minimum number of consecutive clean passes required)
+- If clean passes < minCleanPasses: go back to Step 7
+- If clean passes >= minCleanPasses: proceed
 
 Update overview: `[x] Review`, set `step: review`
 
 ### 9. PR CREATION
 
-**Spawn agent:** tech-writer
+**REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
 
-Resolve model for `tech-writer`.
-
-Spawn tech-writer with:
-- Ticket ID
-- Paths to `overview.md`, `review.md`, `qa.md`
-- Git diff stat: `git diff ${DEFAULT_BRANCH}...HEAD --stat`
-
-After tech-writer returns PR content:
-
-**REQUIRED SUB-SKILL:** Use n1:n1-pr with the generated PR title and body.
-
-The PR skill handles git push, PR creation, and tracker update.
+The PR skill handles tech-writer spawning, git push, PR creation, and tracker update.
 
 After PR is created:
 - The PR skill reports the URL

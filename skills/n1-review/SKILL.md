@@ -92,9 +92,9 @@ Auto-fix minor issues inline (style, naming). Then go back to **Step 2** for con
 **If clean pass (no findings):**
 
 Check review count:
-- Read `n1.config.json` → `review.minPasses` (default: 1)
-- If this is pass N and N < minPasses → go back to **Step 2**
-- If N >= minPasses → **PASS**
+- Read `n1.config.json` → `review.minCleanPasses` (default: 1) — minimum consecutive clean passes required
+- If this is clean pass N and N < minCleanPasses → go back to **Step 2**
+- If N >= minCleanPasses → **PASS**
 
 ### Step 5: Report Result
 

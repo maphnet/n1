@@ -2,7 +2,7 @@
 
 AI-driven development orchestrator for Claude Code. No one writes the code.
 
-N1 is an orchestration layer over [Superpowers](https://github.com/obra/superpowers) that adds 7 specialized agent personas, tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, parallel security review, and a mandatory review loop.
+N1 orchestrates the full development cycle using 7 specialized agent personas and [Superpowers](https://github.com/obra/superpowers) sub-skills. Agents handle autonomous work (analysis, QA, review, fixes, PR content); Superpowers handles interactive steps (brainstorming, planning, implementation dispatch). Adds tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, parallel security review, and a mandatory review loop.
 
 ## Requirements
 
@@ -57,7 +57,7 @@ Input (ticket or brain dump)
   → QA (qa-engineer agent)
   → Review (code-reviewer + security-reviewer agents, parallel)
   → Fix loop (developer agent, if needed)
-  → PR (tech-writer agent + n1:n1-pr)
+  → PR (n1:n1-pr → tech-writer agent)
   → Tracker update
 ```
 
@@ -103,7 +103,7 @@ Tracker routing is config-driven via `.n1/n1.config.json` — all MCP tool names
 
 ## How It Works
 
-N1 is a **lightweight controller** (~5-10K tokens) that delegates work to 7 specialized agent personas and Superpowers skills. Each agent gets fresh context with scoped tools.
+N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation model: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while Superpowers sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). Each agent gets fresh context with scoped tools.
 
 ### Agent Personas
 
