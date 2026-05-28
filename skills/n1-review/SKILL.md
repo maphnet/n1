@@ -8,9 +8,16 @@ argument-hint: "[PR#]"
 
 ## Overview
 
-Two-mode code review: iterative fix loop for your own work, or advisory review for any PR.
+Two-mode code review using specialized agent personas: code-reviewer and security-reviewer for finding issues, developer for fixing them.
 
 **Announce at start:** "I'm using the n1-review skill to review the code."
+
+## Model Resolution
+
+When spawning any agent, resolve its model:
+1. Read `.n1/n1.config.json` → check `models.<agent-name>`
+2. If the key exists → use that model
+3. Otherwise → use the agent's frontmatter default
 
 ## Mode Detection
 
@@ -20,7 +27,7 @@ Two-mode code review: iterative fix loop for your own work, or advisory review f
 
 ## Review Loop Mode
 
-Iterative cycle: request review → receive findings → fix → repeat until clean.
+Iterative cycle: spawn reviewers → receive findings → spawn developer to fix → repeat until clean.
 
 ### Step 1: Collect Context
 
@@ -35,21 +42,30 @@ Read N1 memory if available:
 - `.n1/memory/<ticket-id>/ticket.md` — original requirements
 - `.n1/memory/<ticket-id>/brainstorm.md` — scope and approach decisions
 - `.n1/memory/<ticket-id>/implementation.md` — what was built
+- `.n1/memory/<ticket-id>/qa.md` — test coverage report
 
-### Step 2: Request Review
+### Step 2: Spawn Reviewers
 
-**REQUIRED SUB-SKILL:** Use superpowers:requesting-code-review to perform deep code review.
+**Spawn agents in PARALLEL:** code-reviewer + security-reviewer
 
-Provide the reviewer with:
+Resolve models for both agents.
+
+Prepare shared review context:
 - What was implemented (from memory or commit messages)
 - Original requirements (from ticket.md or brainstorm.md)
-- Base SHA: merge-base with default branch
-- Head SHA: current HEAD
+- Implementation details (from implementation.md)
+- QA results (from qa.md, if available)
+- Base SHA: `git merge-base ${DEFAULT_BRANCH} HEAD`
+- Head SHA: current `HEAD`
+
+Spawn BOTH agents simultaneously with the shared context.
 
 ### Step 3: Evaluate Findings
 
-Categorize results:
-- **Critical** — correctness bugs, security issues, data loss risks
+After BOTH agents return, merge their findings:
+
+Categorize all results:
+- **Critical** — correctness bugs, security vulnerabilities, data loss risks
 - **Important** — design problems, missing edge cases, test gaps
 - **Minor** — style, naming, minor improvements
 
@@ -57,9 +73,17 @@ Categorize results:
 
 **If critical or important findings exist:**
 
-**REQUIRED SUB-SKILL:** Use superpowers:receiving-code-review to systematically fix each finding.
+**Spawn agent:** developer
 
-After fixes are applied, go back to **Step 2** (request review again).
+Resolve model for `developer`.
+
+Pass to developer:
+- Combined findings (Critical + Important from both reviewers)
+- List of affected files
+
+After developer fixes are applied, go back to **Step 2** (re-run both reviewers).
+
+Maximum 3 review-fix cycles before escalating to user.
 
 **If only minor findings:**
 
@@ -84,7 +108,7 @@ Ready for PR creation.
 ```
 
 Update N1 memory if available:
-- Write `.n1/memory/<ticket-id>/review.md` with review results
+- Write `.n1/memory/<ticket-id>/review.md` with combined review results
 - Update `.n1/memory/<ticket-id>/overview.md` checkbox: `[x] Review`
 
 ## Advisory Mode
@@ -102,13 +126,17 @@ Also fetch PR description:
 gh pr view <PR_NUMBER>
 ```
 
-### Step 2: Request Review
+### Step 2: Spawn Reviewer
 
-**REQUIRED SUB-SKILL:** Use superpowers:requesting-code-review to perform deep code review.
+**Spawn agent:** code-reviewer
+
+Resolve model for `code-reviewer`.
 
 Provide:
 - PR diff as the code to review
 - PR description as the requirements
+
+Note: Advisory mode spawns code-reviewer only by default. If the user requests security review, also spawn security-reviewer.
 
 ### Step 3: Present Report
 
@@ -139,5 +167,6 @@ Do NOT apply any fixes. This is advisory only — the user decides what to do wi
 - **Standalone** — `/n1:n1-review` or `/n1:n1-review #340`
 
 **Invokes:**
-- `superpowers:requesting-code-review` — deep architectural review
-- `superpowers:receiving-code-review` — systematic fix of findings (loop mode only)
+- n1 agent: **code-reviewer** — code quality and correctness review
+- n1 agent: **security-reviewer** — security vulnerability review (review loop mode only by default)
+- n1 agent: **developer** — systematic fix of findings (review loop mode only)

@@ -2,7 +2,7 @@
 
 AI-driven development orchestrator for Claude Code. No one writes the code.
 
-N1 is an orchestration layer over [Superpowers](https://github.com/obra/superpowers) that adds tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, and a mandatory review loop.
+N1 is an orchestration layer over [Superpowers](https://github.com/obra/superpowers) that adds 7 specialized agent personas, tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, parallel security review, and a mandatory review loop.
 
 ## Requirements
 
@@ -49,15 +49,20 @@ Single entry point for all task work. Full pipeline:
 
 ```
 Input (ticket or brain dump)
-  → Ticket read (via MCP)
-  → Brainstorm (superpowers:brainstorming)
+  → Ticket read (product-analyst agent)
+  → Codebase analysis (solution-architect agent)
+  → Brainstorm (superpowers:brainstorming, with architect's analysis)
   → Plan (superpowers:writing-plans) — if complex
-  → Implement (superpowers:subagent-driven-development)
-  → Review loop (n1:n1-review)
-  → PR (n1:n1-pr)
+  → Implement (superpowers:SDD + developer persona)
+  → QA (qa-engineer agent)
+  → Review (code-reviewer + security-reviewer agents, parallel)
+  → Fix loop (developer agent, if needed)
+  → PR (tech-writer agent + n1:n1-pr)
   → Tracker update
 ```
 
+- **Agent personas:** 7 specialized agents with scoped tools and configurable models
+- **Parallel security review:** code-reviewer and security-reviewer run simultaneously
 - **Adaptive routing:** simple tasks skip the plan step
 - **Resume support:** interrupt anytime, `/n1:n1-start TRID-510` picks up where you left off
 - **Confidence-based escalation:** low confidence + high blast radius = stop and ask
@@ -68,12 +73,12 @@ Two modes:
 
 | Mode | Trigger | Behavior |
 |------|---------|----------|
-| Review Loop | No args, on feature branch | request → fix → repeat until clean |
-| Advisory | `/n1:n1-review #340` | report only, no fixes |
+| Review Loop | No args, on feature branch | code-reviewer + security-reviewer (parallel) → developer fixes → repeat until clean |
+| Advisory | `/n1:n1-review #340` | code-reviewer report only, no fixes |
 
 ### `/n1:n1-pr` — Pull Request Creation
 
-Collects diff, generates PR title/body, pushes, creates PR via `gh`, and updates the tracker (status + comment with PR link).
+Spawns tech-writer agent for PR content, pushes, creates PR via `gh`, and updates the tracker (status + comment with PR link).
 
 ### `/n1:n1-init` — Project Setup
 
@@ -83,7 +88,8 @@ Interactive wizard:
 2. Enriches CLAUDE.md with detected conventions
 3. Configures tracker (Jira / YouTrack / None)
 4. Sets up git defaults and review policy
-5. Creates `.n1/` directory (fully gitignored)
+5. Configures agent models (defaults or custom per-agent)
+6. Creates `.n1/` directory (fully gitignored)
 
 ## Tracker Support
 
@@ -97,18 +103,36 @@ Tracker routing is config-driven via `.n1/n1.config.json` — all MCP tool names
 
 ## How It Works
 
-N1 is a **lightweight controller** (~5-10K tokens) that delegates all heavy work to Superpowers skills. Each step gets fresh context via subagents.
+N1 is a **lightweight controller** (~5-10K tokens) that delegates work to 7 specialized agent personas and Superpowers skills. Each agent gets fresh context with scoped tools.
+
+### Agent Personas
+
+| Agent | Default Model | Role |
+|-------|---------------|------|
+| product-analyst | opus | Ticket distillation and requirements extraction |
+| solution-architect | opus | Codebase analysis and architecture assessment |
+| developer | opus | Implementation and review fix cycles |
+| code-reviewer | opus | Adversarial code quality review |
+| security-reviewer | opus | Security vulnerability review (OWASP, CWE) |
+| qa-engineer | sonnet | Test design and implementation |
+| tech-writer | sonnet | PR content generation |
+
+Models are configurable per-project via `models` section in `.n1/n1.config.json`.
+
+### Per-Ticket Memory
 
 Per-ticket memory lives in `.n1/memory/<ticket-id>/` with semantic-named files and an explicit dependency map:
 
 | Step | Reads | Writes |
 |------|-------|--------|
 | ticket | — | `ticket.md` |
-| brainstorm | `ticket.md` | `brainstorm.md` |
-| plan | `ticket.md`, `brainstorm.md` | `plan.md` |
+| analysis | `ticket.md` | `analysis.md` |
+| brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
+| plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
-| review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
-| pr | `overview.md`, `review.md` | — |
+| qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
+| review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
+| pr | `overview.md`, `review.md`, `qa.md` | — |
 
 The `.n1/` directory is fully gitignored — tool state never gets committed to your project.
 

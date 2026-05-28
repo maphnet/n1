@@ -11,7 +11,7 @@ Russian is prohibited in any committed file.
 
 ## What This Is
 
-N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, brainstorm, plan, implement, review, PR) by delegating to [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills. It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, delegate heavy work to Superpowers via subagents, and write results back to per-ticket memory.
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR) using 7 specialized agent personas with scoped tools and configurable models. It delegates interactive work to [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills and autonomous work to its own agents. It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or delegate to Superpowers, and write results back to per-ticket memory.
 
 ## Stack
 
@@ -29,7 +29,7 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 ## Conventions
 
 - Skills: `skills/<name>/SKILL.md` — auto-discovered, invoked as `/n1:<skill-name>`
-- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`
+- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` for tool scoping
 - Hooks: `hooks/hooks.json` — event declarations, scripts in `hooks/`
 - One concern per file
 - Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives
@@ -43,12 +43,12 @@ Skills are lightweight controllers that delegate all heavy work:
 
 | N1 Skill | Delegates To | Purpose |
 |----------|-------------|---------|
-| n1-start | brainstorming, writing-plans, subagent-driven-development | Full pipeline |
-| n1-review | requesting-code-review, receiving-code-review | Review + fix loop |
-| n1-pr | (inline: git, gh, MCP) | Push, create PR, update tracker |
+| n1-start | product-analyst, solution-architect, qa-engineer agents + superpowers (brainstorming, writing-plans, SDD) | Full pipeline |
+| n1-review | code-reviewer, security-reviewer, developer agents | Review + fix loop |
+| n1-pr | tech-writer agent + inline git/gh/MCP | Push, create PR, update tracker |
 | n1-init | (inline: analysis + prompts) | Project setup wizard |
 
-All Superpowers calls use the `superpowers:` prefix. Each subagent gets fresh context — the orchestrator never accumulates full history.
+Superpowers calls use the `superpowers:` prefix. Agent spawns use N1's own agent definitions. Each gets fresh context — the orchestrator never accumulates full history.
 
 ### Per-Ticket Memory (`.n1/`)
 
@@ -59,11 +59,13 @@ Each step reads ONLY its declared dependencies:
 | Step | Reads | Writes |
 |------|-------|--------|
 | ticket | — | `ticket.md` |
-| brainstorm | `ticket.md` | `brainstorm.md` |
-| plan | `ticket.md`, `brainstorm.md` | `plan.md` |
+| analysis | `ticket.md` | `analysis.md` |
+| brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
+| plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
-| review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
-| pr | `overview.md`, `review.md` | — |
+| qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
+| review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
+| pr | `overview.md`, `review.md`, `qa.md` | — |
 
 ### Tracker Routing
 
@@ -73,6 +75,22 @@ Tracker MCP tool names are never hardcoded — they're resolved at runtime from 
 |---------|-----------|---------------|
 | Jira | `plugin_atlassian_atlassian` | `getJiraIssue`, `transitionJiraIssue`, `addCommentToJiraIssue`, `getTransitionsForJiraIssue` |
 | YouTrack | `youtrack` | `get_issue`, `update_issue`, `add_issue_comment`, `get_issue_comments` |
+
+### Agent Personas
+
+7 atomic agents with scoped tools and configurable models:
+
+| Agent | Default Model | Tools | Pipeline Stage |
+|-------|---------------|-------|----------------|
+| product-analyst | opus | Read, Tracker MCP | Ticket read |
+| solution-architect | opus | Read, Grep, Glob | Analysis |
+| developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle |
+| code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
+| security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
+| qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA |
+| tech-writer | sonnet | Read, Grep | PR content |
+
+Models default to agent frontmatter values, overridable via `models` section in `n1.config.json`.
 
 ### Session Start Hook
 

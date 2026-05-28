@@ -166,6 +166,31 @@ Ask: **"Minimum review passes before PR creation? (default: 1)"**
 }
 ```
 
+## Step 5b: Agent Model Configuration
+
+N1 uses 7 specialized agent personas, each with a default model. Ask the user if they want to customize.
+
+Ask: **"Use default models for all agents? (yes/customize)"**
+
+Show the defaults:
+```
+Agent              Default Model
+product-analyst    opus
+solution-architect opus
+developer          opus
+code-reviewer      opus
+security-reviewer  opus
+qa-engineer        sonnet
+tech-writer        sonnet
+```
+
+**If "customize":**
+- Accept per-agent overrides (valid values: opus, sonnet, haiku)
+- Only store overrides that differ from the default
+
+**If "yes" (use defaults):**
+- Include the full `models` section with defaults in config (makes the configuration explicit and discoverable)
+
 ## Step 6: Write Configuration and Structure
 
 Create all files:
@@ -173,7 +198,7 @@ Create all files:
 **`.n1/n1.config.json`** — assembled from steps above:
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "tracker": { ... },
   "git": { ... },
   "escalation": {
@@ -184,6 +209,15 @@ Create all files:
   "memory": {
     "ticketContext": true,
     "decisions": true
+  },
+  "models": {
+    "product-analyst": "opus",
+    "solution-architect": "opus",
+    "developer": "opus",
+    "code-reviewer": "opus",
+    "security-reviewer": "opus",
+    "qa-engineer": "sonnet",
+    "tech-writer": "sonnet"
   }
 }
 ```
@@ -212,6 +246,7 @@ Tracker: Jira (TRID) / YouTrack / None
 Default branch: main
 Branch pattern: {prefix}-{id}
 Review passes: 1
+Models: defaults / customized
 
 Created:
   .n1/n1.config.json

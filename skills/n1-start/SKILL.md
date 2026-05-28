@@ -1,6 +1,6 @@
 ---
 name: n1-start
-description: "Core orchestrator. Start working on a task: /n1:n1-start TRID-510 or /n1:n1-start need CSV export for users. Handles the full cycle: ticket → brainstorm → plan → implement → review → PR."
+description: "Core orchestrator. Start working on a task: /n1:n1-start TRID-510 or /n1:n1-start need CSV export for users. Handles the full cycle: ticket → analysis → brainstorm → plan → implement → QA → review → PR."
 argument-hint: "<ticket-id or brain dump>"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "<ticket-id or brain dump>"
 
 ## Overview
 
-Single entry point for all task work. Accepts a ticket ID or a brain dump, then orchestrates the full development cycle: ticket reading → brainstorming → planning → implementation → review → PR → tracker update.
+Single entry point for all task work. Accepts a ticket ID or a brain dump, then orchestrates the full development cycle using specialized agent personas: product-analyst, solution-architect, developer, qa-engineer, code-reviewer, security-reviewer, and tech-writer.
 
 **Announce at start:** "I'm using the n1-start skill to work on this task."
 
@@ -16,14 +16,26 @@ Single entry point for all task work. Accepts a ticket ID or a brain dump, then 
 
 The user provides one of:
 - **Ticket ID** — matches the tracker prefix from config (e.g., `TRID-510`, `PROJ-42`)
+- **File path** — a path to a file containing requirements
 - **Brain dump** — free-text description of what needs to be built
-- **Resume** — ticket ID where memory already exists
+- **Resume** — ticket ID or slug where memory already exists
 
 ### Detect input type:
 
 1. Read `.n1/n1.config.json` → get `tracker.prefix`
 2. If input matches `<prefix>-<number>` pattern → **Ticket mode**
-3. Otherwise → **Brain dump mode**
+3. If input is a file path that exists on disk → **File mode**
+4. Otherwise → **Brain dump mode**
+
+## Model Resolution
+
+When spawning any agent, resolve its model:
+
+1. Read `.n1/n1.config.json` → check `models.<agent-name>`
+2. If the key exists and value is not null → use that model
+3. Otherwise → use the model from the agent's frontmatter default
+
+This allows per-project model overrides (e.g., using sonnet for developer in a cost-sensitive project).
 
 ## Memory Check (Resume Support)
 
@@ -37,48 +49,51 @@ Check if `.n1/memory/<input>/overview.md` exists:
 | Step | Reads | Writes |
 |------|-------|--------|
 | ticket | — | `ticket.md` |
-| brainstorm | `ticket.md` | `brainstorm.md` |
-| plan | `ticket.md`, `brainstorm.md` | `plan.md` |
+| analysis | `ticket.md` | `analysis.md` |
+| brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
+| plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
-| review | `ticket.md`, `brainstorm.md`, `implementation.md` | `review.md` |
-| pr | `overview.md`, `review.md` | — |
+| qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
+| review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
+| pr | `overview.md`, `review.md`, `qa.md` | — |
 
 Each step reads ONLY the files listed in its dependency column, not the full history.
 
 ## Pipeline Steps
 
-### 1. TICKET READ (if ticket mode)
+Steps 3 (Brainstorm) and 4 (Plan checkpoint) are **INTERACTIVE** — they pause for user input. All other steps run autonomously.
 
-Read the tracker ticket and write a structured summary.
+### 1. REQUIREMENTS ANALYSIS
 
-**Inline approach (default for tickets under ~50 comments):**
+**Spawn agent:** product-analyst
 
+Resolve model for `product-analyst` (see Model Resolution above).
+
+The product-analyst accepts three input modes. Choose based on input type:
+
+**Ticket mode** (input matches `<prefix>-<number>`):
 1. Read `.n1/n1.config.json` → `tracker.mcp` and `tracker.operations`
-2. Call MCP tool: `mcp__<tracker.mcp>__<tracker.operations.readTicket>` with the ticket ID
-3. For YouTrack: also call `mcp__<tracker.mcp>__<tracker.operations.getComments>`
-4. For Jira: also call `mcp__<tracker.mcp>__<tracker.operations.getTransitions>`
-5. Distill into structured format and write to `.n1/memory/<ID>/ticket.md`:
-
-```markdown
-## Ticket: <ID>
-**Title:** <title>
-**Priority:** <priority>
-**Status:** <current status>
-
-### Description
-<distilled description>
-
-### Acceptance Criteria
-- [ ] <criteria>
-
-### Key Comments
-- @author (date): "comment"
-```
-
-6. Update tracker status to In Progress:
+2. Spawn product-analyst with:
+   - `mode`: "ticket"
+   - `ticketId`: the parsed ticket ID
+   - `trackerMcp`: from config
+   - `operations`: from config
+3. After agent returns, update tracker status to In Progress:
    - Call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`
 
-**For brain dump mode:** Use the input text directly as the scope. Write it to `.n1/memory/<ID>/ticket.md` where ID is derived from the description (slugified, e.g., `csv-export-users`).
+**File mode** (input is a file path that exists on disk):
+1. Spawn product-analyst with:
+   - `mode`: "file"
+   - `filePath`: the provided path
+
+**Brain dump mode** (free text):
+1. Spawn product-analyst with:
+   - `mode`: "text"
+   - `content`: the raw input text
+
+**For all modes:**
+- Write the agent's output to `.n1/memory/<ID>/ticket.md`
+- ID is: ticket ID for ticket mode, filename slug for file mode, description slug for brain dump (e.g., `csv-export-users`)
 
 **Create initial overview.md:**
 ```markdown
@@ -94,9 +109,11 @@ last_updated: <ISO timestamp>
 
 ## Progress
 - [x] Ticket read
+- [ ] Analysis
 - [ ] Brainstorm
 - [ ] Plan
 - [ ] Implementation
+- [ ] QA
 - [ ] Review
 - [ ] PR
 
@@ -107,13 +124,26 @@ last_updated: <ISO timestamp>
 (none yet)
 ```
 
-### 2. BRAINSTORM
+### 2. ANALYSIS
+
+**Spawn agent:** solution-architect
+
+Resolve model for `solution-architect`.
+
+Spawn the solution-architect agent with:
+- Content of `ticket.md` as the scope to analyze
+
+After the agent returns:
+- Write its output to `.n1/memory/<ID>/analysis.md`
+- Update overview: `[x] Analysis`, set `step: analysis`
+
+### 3. BRAINSTORM
 
 **REQUIRED SUB-SKILL:** Use superpowers:brainstorming to explore the scope and refine the approach.
 
 Pass to brainstorming:
 - The content of `ticket.md` as the idea to explore
-- Any relevant codebase context you've discovered
+- The content of `analysis.md` as **pre-researched codebase context** — tell brainstorming: "Here is a codebase analysis already performed by our solution architect — use this as your starting context instead of exploring from scratch."
 
 After brainstorming completes:
 - Save the design output to `.n1/memory/<ID>/brainstorm.md`
@@ -129,13 +159,21 @@ Based on brainstorming output, determine complexity:
 
 State your reasoning: "This task is [simple/complex] because [reason]. [Skipping to implementation / Proceeding with detailed planning]."
 
-### 3. PLAN (complex tasks only)
+### 4. PLAN (complex tasks only)
+
+**Spawn agent:** solution-architect (second invocation — deeper analysis)
+
+Before calling superpowers:writing-plans, spawn solution-architect again with:
+- Content of `ticket.md` and `brainstorm.md`
+- Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning."
+
+Write output to `.n1/memory/<ID>/analysis.md` (overwrite with enriched version).
 
 **REQUIRED SUB-SKILL:** Use superpowers:writing-plans to create a detailed implementation plan.
 
 Pass to writing-plans:
-- Content of `ticket.md` and `brainstorm.md`
-- Codebase context discovered during brainstorming
+- Content of `ticket.md`, `brainstorm.md`, and updated `analysis.md`
+- Codebase context discovered during analysis
 
 After plan is created:
 - Save reference to `.n1/memory/<ID>/plan.md`:
@@ -157,13 +195,22 @@ After plan is created:
 
 **Wait for explicit approval before continuing.** This is a mandatory checkpoint.
 
-### 4. IMPLEMENT
+### 5. IMPLEMENT
 
 **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development to implement the plan task by task.
+
+Resolve model for `developer`.
 
 Pass to subagent-driven-development:
 - The implementation plan from `plan.md` (or brainstorm.md for simple tasks)
 - Codebase context
+- Developer persona context: read the **Constraints section** from `agents/developer.md` and include it as additional guidance: "When dispatching implementer subagents, include these constraints as additional role guidance for each implementer."
+- If config has a model override for developer, instruct: "Use model `<model>` for implementer subagents." (Note: this is best-effort — the orchestrator passes the instruction as text, but cannot structurally enforce the model parameter in SDD's subagent dispatch.)
+
+**SDD overrides (IMPORTANT):**
+- Do NOT call `superpowers:finishing-a-development-branch` after tasks complete — N1 orchestrator handles the post-implementation pipeline (QA, Review, PR).
+- Do NOT use `superpowers:using-git-worktrees` — work on the current branch directly. N1 manages the branch lifecycle.
+- Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
 
 ### Confidence-Based Escalation
 
@@ -210,18 +257,85 @@ After implementation:
   ```
 - Update overview: `[x] Implementation`, set `step: implementation`
 
-### 5. REVIEW LOOP
+### 6. QA
 
-**REQUIRED SUB-SKILL:** Use n1:n1-review to run the review loop.
+**Spawn agent:** qa-engineer
 
-The review skill handles the iterative fix cycle (request → receive → fix → repeat). It will update memory files when done.
+Resolve model for `qa-engineer`.
 
-After review passes:
-- Verify overview shows `[x] Review`
+Spawn the qa-engineer agent with:
+- Content of `ticket.md` (acceptance criteria)
+- Content of `implementation.md` (what was built, files changed)
+- Content of `plan.md` or `brainstorm.md` (scope context)
 
-### 6. PR CREATION
+After the agent returns:
+- Write its output to `.n1/memory/<ID>/qa.md`
+- Update overview: `[x] QA`, set `step: qa`
+- If QA verdict is FAIL (test reveals a bug):
+  - Report bug details to the user
+  - Spawn developer agent (resolve model for `developer`) to fix the bug
+  - Re-run QA after fix
 
-**REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
+### 7. REVIEW
+
+**Spawn agents in PARALLEL:** code-reviewer + security-reviewer
+
+Resolve models for both agents.
+
+Prepare shared review context:
+- Content of `ticket.md`
+- Content of `brainstorm.md`
+- Content of `implementation.md`
+- Content of `qa.md`
+- Default branch name from config
+
+Spawn BOTH agents simultaneously:
+- **code-reviewer** with the shared review context
+- **security-reviewer** with the shared review context
+
+After BOTH return, merge findings:
+- Combine outputs into `.n1/memory/<ID>/review.md`
+- Prefix code-reviewer findings with [CR-N], security-reviewer with [SEC-N]
+- Combined verdict: FAIL if either reviewer returned FAIL
+
+### 8. FIX (if review failed)
+
+If either reviewer returned FAIL verdict:
+
+**Spawn agent:** developer
+
+Resolve model for `developer`.
+
+Pass to developer:
+- Combined review findings (Critical + Important only)
+- List of affected files
+
+After developer returns:
+- Go back to **Step 7** (REVIEW) — re-run both reviewers
+- Maximum 3 review-fix cycles before escalating to user:
+  "After 3 review cycles, these findings remain unresolved: [list]. Please advise."
+
+If both reviewers returned PASS:
+- Check review count vs `review.minPasses` from config
+- If passes < minPasses: go back to Step 7
+- If passes >= minPasses: proceed
+
+Update overview: `[x] Review`, set `step: review`
+
+### 9. PR CREATION
+
+**Spawn agent:** tech-writer
+
+Resolve model for `tech-writer`.
+
+Spawn tech-writer with:
+- Ticket ID
+- Paths to `overview.md`, `review.md`, `qa.md`
+- Git diff stat: `git diff ${DEFAULT_BRANCH}...HEAD --stat`
+
+After tech-writer returns PR content:
+
+**REQUIRED SUB-SKILL:** Use n1:n1-pr with the generated PR title and body.
 
 The PR skill handles git push, PR creation, and tracker update.
 
@@ -230,7 +344,7 @@ After PR is created:
 
 **CHECKPOINT:** "PR created at <URL>. Ready for Tech Lead review."
 
-### 7. FINALIZE MEMORY
+### 10. FINALIZE MEMORY
 
 Update overview.md:
 - All checkboxes checked
@@ -247,7 +361,7 @@ If any step fails:
 ## Context Management
 
 This orchestrator is a **lightweight controller**. It:
-- Delegates all heavy work to Superpowers sub-skills (each gets fresh context)
+- Delegates all heavy work to specialized agent personas (each gets fresh context)
 - Loads only the dependency files needed for the current step
 - Writes output to memory files after each step (explicit handoff)
 - Never accumulates full history in its own context

@@ -1,15 +1,22 @@
 ---
 name: n1-pr
-description: "Create a pull request. Collects diff, generates PR description, pushes, creates PR, and updates tracker."
+description: "Create a pull request. Collects diff, generates PR description via tech-writer agent, pushes, creates PR, and updates tracker."
 ---
 
 # N1 Pull Request Creation
 
 ## Overview
 
-Create a pull request from the current feature branch. Collects changes, generates PR description, pushes to remote, creates PR via GitHub CLI, and optionally updates the issue tracker.
+Create a pull request from the current feature branch. Spawns the tech-writer agent for PR content generation, then handles git push, PR creation via GitHub CLI, and tracker update.
 
 **Announce at start:** "I'm using the n1-pr skill to create a pull request."
+
+## Model Resolution
+
+When spawning any agent, resolve its model:
+1. Read `.n1/n1.config.json` → check `models.<agent-name>`
+2. If the key exists → use that model
+3. Otherwise → use the agent's frontmatter default
 
 ## Prerequisites
 
@@ -35,6 +42,7 @@ git diff ${DEFAULT_BRANCH}...HEAD --stat
 Read from `.n1/memory/<ticket-id>/`:
 - `overview.md` — ticket title, status, key decisions
 - `review.md` — review results (confirm review passed)
+- `qa.md` — test coverage report
 
 ### N1 config:
 Read `.n1/n1.config.json` for:
@@ -49,24 +57,20 @@ Parse from branch name using `git.branchPattern`. Example:
 
 ## Step 2: Generate PR Content
 
-### Title:
-- If ticket known: `[TRID-510] <ticket title from overview.md>`
-- If no ticket: Derive from commit messages (imperative mood, under 70 chars)
+**If PR title and body are provided as input** (e.g., when called from n1-start after tech-writer already ran): skip tech-writer spawning and use the provided content directly.
 
-### Body:
-```markdown
-## Summary
-<2-3 bullet points describing what changed and why>
+**Otherwise (standalone invocation):**
 
-## Changes
-<grouped list of files changed with brief descriptions>
+**Spawn agent:** tech-writer
 
-## Test Plan
-- [ ] <specific verification steps>
+Resolve model for `tech-writer`.
 
-## Ticket
-<link to tracker ticket if available, otherwise omit section>
-```
+Spawn tech-writer with:
+- Ticket ID (extracted from branch name, if available)
+- Paths to memory files: `overview.md`, `review.md`, `qa.md`
+- Git diff stat output from Step 1
+
+The tech-writer agent returns a structured PR title and body.
 
 Present the generated title and body to the user. Ask: **"Create PR with this content? (yes/edit/cancel)"**
 
@@ -122,4 +126,6 @@ CHECKPOINT: Ready for Tech Lead review.
 - **n1-start** — after review loop passes
 - **Standalone** — `/n1:n1-pr`
 
-**Does NOT invoke sub-skills** — all operations are inline (git, gh, MCP tools).
+**Invokes:**
+- n1 agent: **tech-writer** — PR content generation
+- Inline: git, gh, tracker MCP operations
