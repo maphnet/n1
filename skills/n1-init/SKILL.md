@@ -11,6 +11,10 @@ Initialize N1 for the current project. This creates the `.n1/` directory structu
 
 **Announce at start:** "I'm using the n1-init skill to set up N1 for this project."
 
+**UX rules:**
+- Do NOT show step numbers to the user — they are internal structure only.
+- All choice questions MUST offer numbered options (e.g., `1 — Yes / 2 — No`) so the user can answer with just a number.
+
 ## Prerequisites
 
 Check if CLAUDE.md exists in the project root:
@@ -18,10 +22,10 @@ Check if CLAUDE.md exists in the project root:
 - **If exists:** Continue.
 
 Check if `.n1/n1.config.json` already exists:
-- **If exists:** Tell the user: "N1 is already configured for this project. Current config:" then show the config. Ask if they want to reconfigure. If no — **STOP.**
+- **If exists:** Tell the user: "N1 is already configured for this project. Current config:" then show the config. Ask: "Reconfigure? **1** — Yes / **2** — No". If no — **STOP.**
 - **If missing:** Continue with fresh setup.
 
-## Step 1: Analyze Repository
+## Analyze Repository
 
 Explore the project to detect:
 
@@ -34,7 +38,7 @@ Explore the project to detect:
 
 Read existing CLAUDE.md content to identify what's already documented.
 
-## Step 2: Enrich CLAUDE.md (if gaps found)
+## Enrich CLAUDE.md (if gaps found)
 
 Compare what was detected vs. what's documented in CLAUDE.md.
 
@@ -56,19 +60,23 @@ npm run dev
 - app/Services/ — Business logic
 ...
 
-Add these to CLAUDE.md? (yes/no/edit)
+Add these to CLAUDE.md?
+1 — Yes
+2 — No
+3 — Edit first
 ```
 
-If approved, append to CLAUDE.md. If "edit" — ask what to change first.
+If approved (1), append to CLAUDE.md. If edit (3) — ask what to change first.
 
-## Step 3: Tracker Setup
+## Tracker Setup
 
-Ask: **"Which issue tracker do you use?"**
+Ask: **"Which issue tracker do you use? (1/2/3)"**
 
-Present options:
-1. **Jira** (via Atlassian MCP)
-2. **YouTrack** (via YouTrack MCP)
-3. **None** (no tracker integration)
+```
+1 — Jira (via Atlassian MCP)
+2 — YouTrack (via YouTrack MCP)
+3 — None (no tracker integration)
+```
 
 ### If Jira:
 
@@ -139,7 +147,7 @@ Set config values:
 }
 ```
 
-## Step 4: Git Configuration
+## Git Configuration
 
 Detect automatically:
 - **defaultBranch:** Run `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'` or fall back to checking `main`/`master` existence
@@ -154,7 +162,7 @@ Detect automatically:
 }
 ```
 
-## Step 5: Review Configuration
+## Review Configuration
 
 Ask: **"Minimum consecutive clean review passes before PR creation? (default: 1)"**
 
@@ -166,11 +174,16 @@ Ask: **"Minimum consecutive clean review passes before PR creation? (default: 1)
 }
 ```
 
-## Step 5b: Agent Model Configuration
+## Agent Model Configuration
 
 N1 uses 7 specialized agent personas, each with a default model. Ask the user if they want to customize.
 
-Ask: **"Use default models for all agents? (yes/customize)"**
+Ask: **"Use default models for all agents? (1/2)"**
+
+```
+1 — Yes, use defaults
+2 — Customize
+```
 
 Show the defaults:
 ```
@@ -184,18 +197,18 @@ qa-engineer        sonnet
 tech-writer        sonnet
 ```
 
-**If "customize":**
+**If 2 (customize):**
 - Accept per-agent overrides (valid values: opus, sonnet, haiku)
 - Only store overrides that differ from the default
 
-**If "yes" (use defaults):**
+**If 1 (use defaults):**
 - Include the full `models` section with defaults in config (makes the configuration explicit and discoverable)
 
-## Step 6: Write Configuration and Structure
+## Write Configuration and Structure
 
 Create all files:
 
-**`.n1/n1.config.json`** — assembled from steps above:
+**`.n1/n1.config.json`** — assembled from sections above:
 ```json
 {
   "version": "0.2.0",
@@ -236,7 +249,7 @@ echo "# N1 plugin state" >> .gitignore
 echo ".n1/" >> .gitignore
 ```
 
-## Step 7: Confirm
+## Confirm
 
 Show summary:
 ```
