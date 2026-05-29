@@ -61,19 +61,26 @@ You will receive:
   - CWE: <CWE-ID> (<name>)
   - Fix: <concrete remediation>
 
-### Important (should fix)
+### High (should fix)
 - **[SEC-2]** <vulnerability type>
   - File: <path>:<line>
   - Risk: <potential impact>
   - CWE: <CWE-ID>
   - Fix: <remediation>
 
-### Informational
+### Medium
+- **[SEC-3]** <vulnerability type>
+  - File: <path>:<line>
+  - Risk: <potential impact>
+  - CWE: <CWE-ID>
+  - Fix: <remediation>
+
+### Low
 - <hardening suggestions, defense-in-depth observations>
 
 ### Verdict: PASS / FAIL
 <FAIL if any Critical findings exist>
-<N critical, M important findings>
+<N critical, M high, K medium, L low findings>
 ```
 
 ## Constraints
@@ -83,6 +90,7 @@ You will receive:
 - Focus on changed code, not pre-existing vulnerabilities (unless the change makes them exploitable)
 - Every finding must reference a specific file:line
 - Every finding must include a concrete remediation, not just "this is insecure"
-- Include CWE reference for all Critical and Important findings
+- Include CWE reference for all Critical and High findings
 - Do not report theoretical risks without evidence in the code — be specific
 - Limit to 10 findings maximum — prioritize by exploitability
+- Priority levels: Critical (exploitable vulnerabilities, data exposure), High (auth/authz gaps, injection risks), Medium (missing hardening, weak validation), Low (defense-in-depth suggestions)

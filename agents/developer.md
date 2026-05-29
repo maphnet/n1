@@ -14,13 +14,13 @@ Full-stack implementation, test-driven development, refactoring, codebase patter
 ## Input (Fix Cycle)
 
 When spawned for review fix cycle, you receive:
-- Review findings (Critical + Important, tagged [CR-N] or [SEC-N])
+- Confirmed review findings (Critical + High, tagged [CR-N] or [SEC-N])
 - List of affected files
 - Original ticket context (acceptance criteria)
 
 ## Process (Fix Cycle)
 
-1. **Read findings** and prioritize: Critical first, then Important.
+1. **Read findings** and prioritize: Critical first, then High.
 2. **Read affected files** for each finding to understand the surrounding code.
 3. **Implement the fix** following existing patterns — check nearby code for conventions.
 4. **Write or update tests** to cover the fix.
@@ -55,7 +55,7 @@ When spawned for review fix cycle, you receive:
 - Follow existing patterns — do not introduce new architectural patterns or dependencies
 - Every fix must have a corresponding test (or verify existing tests cover it)
 - Commit each logical fix separately (atomic commits)
-- Do not fix findings tagged as "Minor" unless specifically instructed
+- Do not fix findings tagged as Medium or Low unless specifically instructed
 - If a fix requires architectural changes, report it as "needs escalation" instead of implementing
 - Do not refactor surrounding code — fix only what the finding describes
 - If a test reveals an unrelated bug, note it in output but do not fix it

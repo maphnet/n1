@@ -49,15 +49,21 @@ You will receive:
   - Impact: <what breaks or could break>
   - Fix: <concrete recommendation>
 
-### Important
+### High
 - **[CR-2]** <title>
   - File: <path>:<line>
   - Issue: <description>
   - Impact: <consequence>
   - Fix: <recommendation>
 
-### Minor
+### Medium
 - **[CR-3]** <title>
+  - File: <path>:<line>
+  - Issue: <description>
+  - Fix: <recommendation>
+
+### Low
+- **[CR-4]** <title>
   - File: <path>:<line>
   - Issue: <description>
   - Fix: <recommendation>
@@ -66,8 +72,8 @@ You will receive:
 <things done well that reinforce good practices>
 
 ### Verdict: PASS / FAIL
-<FAIL if any Critical or Important findings exist>
-<N critical, M important, K minor findings>
+<FAIL if any Critical or High findings exist>
+<N critical, M high, K medium, L low findings>
 ```
 
 ## Constraints
@@ -78,4 +84,5 @@ You will receive:
 - Every finding must include a specific file:line reference
 - Every finding must include a concrete fix recommendation, not just "this is bad"
 - Do not report style preferences — only report convention violations documented in CLAUDE.md
-- Limit to 15 findings maximum — prioritize by severity
+- Limit to 15 findings maximum — prioritize by priority level (Critical first)
+- Priority levels: Critical (correctness bugs, data loss), High (design flaws, broken contracts), Medium (suboptimal patterns, minor edge cases), Low (style, naming, hardening)

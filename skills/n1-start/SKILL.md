@@ -98,9 +98,41 @@ The product-analyst accepts three input modes. Choose based on input type:
    - `mode`: "text"
    - `content`: the raw input text
 
+**Tracker ticket creation (brain dump mode only):**
+
+After product-analyst returns, if a tracker is configured (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
+
+Ask the user:
+```
+The task has been structured. Would you like to create a tracker ticket?
+1 — Yes, create a ticket in <tracker.mcp>
+2 — No, continue without a ticket
+```
+
+**If 1 (Yes):**
+1. Extract the Title and structured content from the product-analyst output
+2. Create the ticket via MCP:
+   - **YouTrack:** Call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
+     - `project`: `tracker.projectKey`
+     - `summary`: the Title from product-analyst output
+     - `description`: the Core Ask + Description + Acceptance Criteria sections
+   - **Jira:** First resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources`, then call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
+     - `cloudId`: resolved cloud ID
+     - `projectKey`: `tracker.projectKey`
+     - `issueTypeName`: "Task"
+     - `summary`: the Title from product-analyst output
+     - `description`: the Core Ask + Description + Acceptance Criteria sections
+3. Use the returned ticket ID as the memory `<ID>` (replacing the slug)
+4. Report: "Created ticket **<ID>**: <title>"
+5. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
+
+**If 2 (No):**
+- Use description slug as memory ID (e.g., `csv-export-users`)
+- Skip tracker status updates throughout the pipeline
+
 **For all modes:**
 - Write the agent's output to `.n1/memory/<ID>/ticket.md`
-- ID is: ticket ID for ticket mode, filename slug for file mode, description slug for brain dump (e.g., `csv-export-users`)
+- ID is: ticket ID for ticket mode (or brain dump with ticket creation), filename slug for file mode, description slug for brain dump without ticket (e.g., `csv-export-users`)
 
 **Create initial overview.md:**
 ```markdown
