@@ -98,9 +98,9 @@ The product-analyst accepts three input modes. Choose based on input type:
    - `mode`: "text"
    - `content`: the raw input text
 
-**Tracker ticket creation (brain dump mode only):**
+**Tracker ticket creation (brain dump and file modes):**
 
-After product-analyst returns, if a tracker is configured (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
+After product-analyst returns, if the input was a brain dump or file path, AND a tracker is configured (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
 
 Ask the user:
 ```
@@ -127,12 +127,12 @@ The task has been structured. Would you like to create a tracker ticket?
 5. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
 
 **If 2 (No):**
-- Use description slug as memory ID (e.g., `csv-export-users`)
+- Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
 - Skip tracker status updates throughout the pipeline
 
 **For all modes:**
 - Write the agent's output to `.n1/memory/<ID>/ticket.md`
-- ID is: ticket ID for ticket mode (or brain dump with ticket creation), filename slug for file mode, description slug for brain dump without ticket (e.g., `csv-export-users`)
+- ID is: ticket ID for ticket mode (or brain dump/file mode with ticket creation), filename slug for file mode without ticket, description slug for brain dump without ticket (e.g., `csv-export-users`)
 
 **Create initial overview.md:**
 ```markdown
