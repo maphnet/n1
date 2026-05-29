@@ -28,6 +28,7 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 
 ## Conventions
 
+- **Skill authoring:** Always use `/writing-skills` skill when creating or modifying skills
 - Skills: `skills/<name>/SKILL.md` — auto-discovered, invoked as `/n1:<skill-name>`
 - Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` (comma-separated list of allowed tools, advisory for LLM scoping — not structurally enforced by Claude Code)
 - Hooks: `hooks/hooks.json` — event declarations, scripts in `hooks/`
