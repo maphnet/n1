@@ -255,7 +255,7 @@ Detect **defaultBranch** automatically:
 
 ## Review Configuration
 
-Ask: **"Minimum consecutive clean review passes before PR creation? (default: 1)"**
+Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless they explicitly requested review customization when invoking n1-init.
 
 ```json
 {
@@ -267,18 +267,12 @@ Ask: **"Minimum consecutive clean review passes before PR creation? (default: 1)
 
 ## Agent Model Configuration
 
-N1 uses 7 specialized agent personas, each with a default model. Ask the user if they want to customize.
+Use default models from agent frontmatter. **Do NOT ask** about model customization unless the user explicitly requested it when invoking n1-init.
 
-Ask: **"Use default models for all agents? (1/2)"**
+If the user did request customization, show the defaults table and accept per-agent overrides (valid values: opus, sonnet, haiku) — only store overrides that differ from the default.
 
+Defaults:
 ```
-1 — Yes, use defaults
-2 — Customize
-```
-
-Show the defaults:
-```
-Agent              Default Model
 product-analyst    opus
 solution-architect opus
 developer          opus
@@ -287,13 +281,6 @@ security-reviewer  opus
 qa-engineer        sonnet
 tech-writer        sonnet
 ```
-
-**If 2 (customize):**
-- Accept per-agent overrides (valid values: opus, sonnet, haiku)
-- Only store overrides that differ from the default
-
-**If 1 (use defaults):**
-- Include the full `models` section with defaults in config (makes the configuration explicit and discoverable)
 
 ## Write Configuration and Structure
 
@@ -349,8 +336,6 @@ N1 is ready.
 Tracker: Jira (TRID) / YouTrack / None
 Default branch: main
 Branch pattern: {prefix}-{id}
-Review passes: 1
-Models: defaults / customized
 
 Created:
   .n1/n1.config.json
