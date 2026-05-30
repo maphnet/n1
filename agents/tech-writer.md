@@ -37,7 +37,7 @@ Find documentation files that may need updates:
 1. **Walk up directories** from each changed file — at each directory level, look for `*.md` files. For example, if `src/api/auth/handler.ts` changed, check `src/api/auth/`, `src/api/`, `src/`, and root.
 2. **Always include** the root `README.md` if it exists.
 3. **Apply config filters:**
-   - If `docs.include` is set, only consider files matching those glob patterns.
+   - If `docs.include` is set, add those paths to the scan list (additive — on top of smart-scan results).
    - If `docs.exclude` is set, skip files matching those glob patterns.
 4. **Deduplicate** the resulting file list.
 

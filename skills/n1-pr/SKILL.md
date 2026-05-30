@@ -184,5 +184,5 @@ CHECKPOINT: Ready for Tech Lead review.
 - **Standalone** — `/n1:n1-pr`
 
 **Invokes:**
-- n1 agent: **tech-writer** — PR content generation
+- n1 agent: **tech-writer** — doc update (Phase 1) + PR content generation (Phase 2)
 - Inline: git, gh, tracker MCP operations

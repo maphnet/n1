@@ -67,7 +67,7 @@ Each step reads ONLY its declared dependencies:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | — |
+| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | `overview.md` (updates) |
 
 ### Tracker Routing
 
