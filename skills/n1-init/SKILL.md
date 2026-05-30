@@ -261,6 +261,26 @@ Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless th
 }
 ```
 
+## CI Checks Configuration
+
+Use defaults. **Do NOT ask** the user about this unless they explicitly requested CI customization when invoking n1-init.
+
+- `enabled: true` — CI watch runs automatically after PR creation in n1-start
+- `maxFixAttempts: 3` — developer agent gets 3 cycles to fix CI failures before escalating to user
+- `confidenceThreshold: 0.7` — for checks that don't match any known category, developer agent must exceed this confidence to auto-fix
+
+```json
+{
+  "ciChecks": {
+    "enabled": true,
+    "maxFixAttempts": 3,
+    "confidenceThreshold": 0.7
+  }
+}
+```
+
+Categories use built-in defaults (lint, typecheck, test, build, security, infra — all `auto-fix`). Teams can override by adding a `categories` block after running n1-init.
+
 ## Plan Review Configuration
 
 Use defaults. **Do NOT ask** the user about this unless they explicitly requested plan review customization when invoking n1-init.
@@ -361,6 +381,11 @@ Create all files:
     "alwaysAskOn": ["security", "architecture", "public-api"]
   },
   "review": { ... },
+  "ciChecks": {
+    "enabled": true,
+    "maxFixAttempts": 3,
+    "confidenceThreshold": 0.7
+  },
   "planReview": {
     "reviewPlan": true,
     "requirePlanApproval": false
