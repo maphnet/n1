@@ -83,7 +83,7 @@ Tracker MCP tool names are never hardcoded — they're resolved at runtime from 
 
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
-| product-analyst | opus | Read, Tracker MCP | Ticket read |
+| product-analyst | sonnet | Read, Tracker MCP | Ticket read |
 | solution-architect | opus | Read, Grep, Glob | Analysis |
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |

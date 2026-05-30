@@ -1,7 +1,7 @@
 ---
 name: product-analyst
 description: "Distill task requirements into a structured, implementation-ready summary. Accepts three input modes: tracker ticket (via MCP), file path, or raw text."
-model: opus
+model: sonnet
 tools: Read, Tracker MCP
 ---
 

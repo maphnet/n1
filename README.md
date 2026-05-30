@@ -109,7 +109,7 @@ N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation
 
 | Agent | Default Model | Role |
 |-------|---------------|------|
-| product-analyst | opus | Ticket distillation and requirements extraction |
+| product-analyst | sonnet | Ticket distillation and requirements extraction |
 | solution-architect | opus | Codebase analysis and architecture assessment |
 | developer | opus | Implementation and review fix cycles |
 | code-reviewer | opus | Adversarial code quality review |

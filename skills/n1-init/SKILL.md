@@ -273,7 +273,7 @@ If the user did request customization, show the defaults table and accept per-ag
 
 Defaults:
 ```
-product-analyst    opus
+product-analyst    sonnet
 solution-architect opus
 developer          opus
 code-reviewer      opus
@@ -302,7 +302,7 @@ Create all files:
     "decisions": true
   },
   "models": {
-    "product-analyst": "opus",
+    "product-analyst": "sonnet",
     "solution-architect": "opus",
     "developer": "opus",
     "code-reviewer": "opus",
