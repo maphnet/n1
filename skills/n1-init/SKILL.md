@@ -11,6 +11,10 @@ Initialize N1 for the current project. This creates the `.n1/` directory structu
 
 **Announce at start:** "I'm using the n1-init skill to set up N1 for this project."
 
+**UX rules:**
+- Do NOT show step numbers to the user — they are internal structure only.
+- All choice questions MUST offer numbered options (e.g., `1 — Yes / 2 — No`) so the user can answer with just a number.
+
 ## Prerequisites
 
 Check if CLAUDE.md exists in the project root:
@@ -18,10 +22,10 @@ Check if CLAUDE.md exists in the project root:
 - **If exists:** Continue.
 
 Check if `.n1/n1.config.json` already exists:
-- **If exists:** Tell the user: "N1 is already configured for this project. Current config:" then show the config. Ask if they want to reconfigure. If no — **STOP.**
+- **If exists:** Tell the user: "N1 is already configured for this project. Current config:" then show the config. Ask: "Reconfigure? **1** — Yes / **2** — No". If no — **STOP.**
 - **If missing:** Continue with fresh setup.
 
-## Step 1: Analyze Repository
+## Analyze Repository
 
 Explore the project to detect:
 
@@ -34,7 +38,7 @@ Explore the project to detect:
 
 Read existing CLAUDE.md content to identify what's already documented.
 
-## Step 2: Enrich CLAUDE.md (if gaps found)
+## Enrich CLAUDE.md (if gaps found)
 
 Compare what was detected vs. what's documented in CLAUDE.md.
 
@@ -56,29 +60,93 @@ npm run dev
 - app/Services/ — Business logic
 ...
 
-Add these to CLAUDE.md? (yes/no/edit)
+Add these to CLAUDE.md?
+1 — Yes
+2 — No
+3 — Edit first
 ```
 
-If approved, append to CLAUDE.md. If "edit" — ask what to change first.
+If approved (1), append to CLAUDE.md. If edit (3) — ask what to change first.
 
-## Step 3: Tracker Setup
+## Tracker Setup
 
 Ask: **"Which issue tracker do you use?"**
 
-Present options:
-1. **Jira** (via Atlassian MCP)
-2. **YouTrack** (via YouTrack MCP)
-3. **None** (no tracker integration)
+```
+1 — Jira (via Atlassian MCP)
+2 — YouTrack (via YouTrack MCP)
+3 — None (no tracker integration)
+```
 
 ### If Jira:
 
-Set config values:
+**Verify MCP and get projects:**
+
+Call `mcp__plugin_atlassian_atlassian__getVisibleJiraProjects` — this simultaneously checks connectivity and retrieves the project list.
+
+- **Success** → MCP is connected. Proceed to project selection.
+- **Failure (tool not found or error):**
+  1. Tell the user: "The Atlassian MCP server is not connected or not configured."
+  2. Ask: **"Would you like me to help set it up? 1 — Yes / 2 — Skip tracker"**
+  3. If **1:** Guide the user through adding the Atlassian MCP server to their Claude Code MCP settings. **CRITICAL: NEVER store, save, log, or transmit API keys, tokens, or credentials anywhere — the user must enter them directly into their own MCP configuration only.** After setup, retry `getVisibleJiraProjects`. If still fails — report the error, set `tracker.mcp` to `null`, skip remaining tracker setup.
+  4. If **2:** Set `tracker.mcp` to `null`, skip remaining tracker setup.
+
+**Select project:**
+
+Display the project list from `getVisibleJiraProjects` as numbered options:
+```
+Available Jira projects:
+1 — TRID (Trident)
+2 — PROJ (Project Alpha)
+3 — BACK (Backend Services)
+...
+```
+
+Ask: **"Which project should N1 use?"**
+
+Set both `tracker.projectKey` and `tracker.prefix` from the selected project's key.
+
+**Branch prefix:**
+
+Ask: **"Use {KEY} as branch prefix? (e.g., branch name: {KEY}-123) 1 — Yes (default) / 2 — No"**
+
+- If **1** (or enter/default): set `git.branchPattern` to `{prefix}-{id}`
+- If **2**: set `git.branchPattern` to `{id}`
+
+**Auto-detect workflow statuses:**
+
+Detect statuses via MCP — do NOT ask the user to type status names:
+
+1. Try calling `mcp__plugin_atlassian_atlassian__fetch` with the Jira REST endpoint `/rest/api/3/project/{projectKey}/statuses` to get all workflow statuses for the project.
+2. If that fails or returns empty: find a sample issue via `mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql` (JQL: `project = {KEY} ORDER BY created DESC`, maxResults: 1), then call `mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue` on it to retrieve available transitions.
+
+Auto-map detected statuses to N1 workflow slots by matching common names:
+- **todo**: "To Do", "Open", "New", "Backlog", "Created"
+- **inProgress**: "In Progress", "In Development", "Active", "In Work"
+- **review**: "In Review", "Code Review", "Review", "Testing", "QA"
+- **done**: "Done", "Closed", "Resolved", "Complete"
+
+Show the detected mapping for confirmation:
+```
+Detected workflow statuses:
+  todo       → To Do
+  inProgress → In Progress
+  review     → In Review
+  done       → Done
+
+Correct? 1 — Yes / 2 — No, let me specify manually
+```
+
+- If **1**: use detected values.
+- If **2** or auto-detection failed entirely: ask the user for the 4 status names.
+
+Set config:
 ```json
 {
   "tracker": {
     "mcp": "plugin_atlassian_atlassian",
-    "prefix": "<ask user>",
-    "projectKey": "<ask user>",
+    "prefix": "<from project selection>",
+    "projectKey": "<from project selection>",
     "operations": {
       "readTicket": "getJiraIssue",
       "getTransitions": "getTransitionsForJiraIssue",
@@ -88,29 +156,56 @@ Set config values:
       "createIssue": "createJiraIssue"
     },
     "statuses": {
-      "todo": "<ask user or detect>",
-      "inProgress": "<ask user or detect>",
-      "review": "<ask user or detect>",
-      "done": "<ask user or detect>"
+      "todo": "<detected or manual>",
+      "inProgress": "<detected or manual>",
+      "review": "<detected or manual>",
+      "done": "<detected or manual>"
     }
   }
 }
 ```
 
-Ask for:
-- Ticket prefix (e.g., "TRID", "PROJ")
-- Project key (often same as prefix)
-- Workflow statuses: "What are your workflow status names? Common: To Do, In Progress, In Review, Done"
-
 ### If YouTrack:
 
-Set config values:
+**Verify MCP and get projects:**
+
+Call `mcp__youtrack__find_projects`.
+
+- **Success** → MCP is connected. Proceed to project selection.
+- **Failure:**
+  1. Tell the user: "The YouTrack MCP server is not connected or not configured."
+  2. Ask: **"Would you like me to help set it up? 1 — Yes / 2 — Skip tracker"**
+  3. If **1:** Guide the user through adding the YouTrack MCP server. **CRITICAL: NEVER store, save, log, or transmit API keys, tokens, or credentials.** After setup, retry `find_projects`. If still fails — set `tracker.mcp` to `null`, skip tracker setup.
+  4. If **2:** Set `tracker.mcp` to `null`, skip remaining tracker setup.
+
+**Select project:**
+
+Display projects from `find_projects` as numbered options. Ask: **"Which project should N1 use?"**
+
+Set `tracker.projectKey` and `tracker.prefix` from the selected project's short name / ID.
+
+**Branch prefix:**
+
+Ask: **"Use {KEY} as branch prefix? (e.g., branch name: {KEY}-123) 1 — Yes (default) / 2 — No"**
+
+Same config effect as Jira above.
+
+**Auto-detect workflow statuses:**
+
+Detect statuses via MCP — do NOT ask the user to type status names:
+
+1. Try `mcp__youtrack__get_issue_fields_schema` — look for the State field and extract its bundle values (possible states).
+2. If that doesn't return state values: search for a sample issue via `mcp__youtrack__search_issues` (query: `project: {shortName}`, limit: 1), then examine its State field to see available values.
+
+Same auto-mapping and confirmation flow as Jira above.
+
+Set config:
 ```json
 {
   "tracker": {
     "mcp": "youtrack",
-    "prefix": "<ask user>",
-    "projectKey": "<ask user>",
+    "prefix": "<from project selection>",
+    "projectKey": "<from project selection>",
     "operations": {
       "readTicket": "get_issue",
       "getComments": "get_issue_comments",
@@ -120,10 +215,10 @@ Set config values:
       "createIssue": "create_issue"
     },
     "statuses": {
-      "todo": "<ask user>",
-      "inProgress": "<ask user>",
-      "review": "<ask user>",
-      "done": "<ask user>"
+      "todo": "<detected or manual>",
+      "inProgress": "<detected or manual>",
+      "review": "<detected or manual>",
+      "done": "<detected or manual>"
     }
   }
 }
@@ -139,41 +234,62 @@ Set config values:
 }
 ```
 
-## Step 4: Git Configuration
+## Git Configuration
 
-Detect automatically:
-- **defaultBranch:** Run `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'` or fall back to checking `main`/`master` existence
-- **branchPattern:** Ask user. Default suggestion: `{prefix}-{id}` (e.g., `TRID-510`)
+Detect **defaultBranch** automatically:
+- Run `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'`
+- Fall back to checking `main`/`master` branch existence
+
+**branchPattern:**
+- If a tracker was configured above → already set during Tracker Setup (branch prefix question)
+- If no tracker (None) → default to `feature/{slug}`
 
 ```json
 {
   "git": {
     "defaultBranch": "main",
-    "branchPattern": "{prefix}-{id}"
+    "branchPattern": "<from tracker setup or feature/{slug}>"
   }
 }
 ```
 
-## Step 5: Review Configuration
+## Review Configuration
 
-Ask: **"Minimum review passes before PR creation? (default: 1)"**
+Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless they explicitly requested review customization when invoking n1-init.
 
 ```json
 {
   "review": {
-    "minPasses": 1
+    "minCleanPasses": 1
   }
 }
 ```
 
-## Step 6: Write Configuration and Structure
+## Agent Model Configuration
+
+Use default models from agent frontmatter. **Do NOT ask** about model customization unless the user explicitly requested it when invoking n1-init.
+
+If the user did request customization, show the defaults table and accept per-agent overrides (valid values: opus, sonnet, haiku) — only store overrides that differ from the default.
+
+Defaults:
+```
+product-analyst    sonnet
+solution-architect opus
+developer          opus
+code-reviewer      opus
+security-reviewer  opus
+qa-engineer        sonnet
+tech-writer        sonnet
+```
+
+## Write Configuration and Structure
 
 Create all files:
 
-**`.n1/n1.config.json`** — assembled from steps above:
+**`.n1/n1.config.json`** — assembled from sections above:
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "tracker": { ... },
   "git": { ... },
   "escalation": {
@@ -184,6 +300,15 @@ Create all files:
   "memory": {
     "ticketContext": true,
     "decisions": true
+  },
+  "models": {
+    "product-analyst": "sonnet",
+    "solution-architect": "opus",
+    "developer": "opus",
+    "code-reviewer": "opus",
+    "security-reviewer": "opus",
+    "qa-engineer": "sonnet",
+    "tech-writer": "sonnet"
   }
 }
 ```
@@ -202,7 +327,7 @@ echo "# N1 plugin state" >> .gitignore
 echo ".n1/" >> .gitignore
 ```
 
-## Step 7: Confirm
+## Confirm
 
 Show summary:
 ```
@@ -211,7 +336,6 @@ N1 is ready.
 Tracker: Jira (TRID) / YouTrack / None
 Default branch: main
 Branch pattern: {prefix}-{id}
-Review passes: 1
 
 Created:
   .n1/n1.config.json
