@@ -124,8 +124,9 @@ The task has been structured. Would you like to create a tracker ticket?
      - `summary`: the Title from product-analyst output
      - `description`: the Core Ask + Description + Acceptance Criteria sections
 3. Use the returned ticket ID as the memory `<ID>` (replacing the slug)
-4. Report: "Created ticket **<ID>**: <title>"
-5. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
+4. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
+5. Report: "Created ticket **[<ID>](<ticket URL>)**: <title>"
+6. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
 
 **If 2 (No):**
 - Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
