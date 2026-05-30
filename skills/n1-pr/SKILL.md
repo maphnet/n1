@@ -138,10 +138,11 @@ Capture and display the PR URL.
 
 Read `.n1/n1.config.json`. If `tracker.mcp` is not null:
 
-1. **Move status to review:**
+1. **Move status to code review:**
    - Construct MCP tool call: `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`
-   - For Jira: first call `mcp__<tracker.mcp>__<tracker.operations.getTransitions>` to get the transition ID for the review status, then call `transitionJiraIssue`
-   - For YouTrack: call `update_issue` with the review status field
+   - Use `tracker.statuses.codeReview` as the target status (this is "Code Review" if the tracker has it, or falls back to "In Progress")
+   - For Jira: first call `mcp__<tracker.mcp>__<tracker.operations.getTransitions>` to get the transition ID for the `codeReview` status, then call `transitionJiraIssue`
+   - For YouTrack: call `update_issue` with the `codeReview` status value
 
 2. **Add PR link as comment:**
    - Construct MCP tool call: `mcp__<tracker.mcp>__<tracker.operations.addComment>`

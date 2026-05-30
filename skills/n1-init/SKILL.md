@@ -123,22 +123,20 @@ Detect statuses via MCP — do NOT ask the user to type status names:
 Auto-map detected statuses to N1 workflow slots by matching common names:
 - **todo**: "To Do", "Open", "New", "Backlog", "Created"
 - **inProgress**: "In Progress", "In Development", "Active", "In Work"
-- **review**: "In Review", "Code Review", "Review", "Testing", "QA"
-- **done**: "Done", "Closed", "Resolved", "Complete"
+- **codeReview**: "Code Review" — if no exact match found, fall back to the `inProgress` value (N1 uses this after PR creation; the tracker's "Review"/"QA" columns are reserved for human QA outside the orchestrator)
 
 Show the detected mapping for confirmation:
 ```
 Detected workflow statuses:
   todo       → To Do
   inProgress → In Progress
-  review     → In Review
-  done       → Done
+  codeReview → Code Review (or In Progress if no Code Review status)
 
 Correct? 1 — Yes / 2 — No, let me specify manually
 ```
 
 - If **1**: use detected values.
-- If **2** or auto-detection failed entirely: ask the user for the 4 status names.
+- If **2** or auto-detection failed entirely: ask the user for the 3 status names (todo, inProgress, codeReview).
 
 Set config:
 ```json
@@ -158,8 +156,7 @@ Set config:
     "statuses": {
       "todo": "<detected or manual>",
       "inProgress": "<detected or manual>",
-      "review": "<detected or manual>",
-      "done": "<detected or manual>"
+      "codeReview": "<detected or inProgress fallback>"
     }
   }
 }
@@ -217,8 +214,7 @@ Set config:
     "statuses": {
       "todo": "<detected or manual>",
       "inProgress": "<detected or manual>",
-      "review": "<detected or manual>",
-      "done": "<detected or manual>"
+      "codeReview": "<detected or inProgress fallback>"
     }
   }
 }
