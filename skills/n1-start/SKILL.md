@@ -171,6 +171,7 @@ Resolve model for `solution-architect`.
 
 Spawn the solution-architect agent with:
 - Content of `ticket.md` as the scope to analyze
+- The **Type** field extracted from `ticket.md` (bug/feature/task/improvement) — pass it explicitly so the architect knows whether to perform bug investigation
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/analysis.md`
@@ -183,6 +184,7 @@ After the agent returns:
 Pass to brainstorming:
 - The content of `ticket.md` as the idea to explore
 - The content of `analysis.md` as **pre-researched codebase context** — tell brainstorming: "Here is a codebase analysis already performed by our solution architect — use this as your starting context instead of exploring from scratch."
+- **If ticket type is `bug`:** Also tell brainstorming: "This is a bug. The analysis includes a Bug Investigation section with the likely root cause and affected code path. Use these findings to ask informed questions about the fix approach rather than generic questions."
 
 After brainstorming completes:
 - Save the design output to `.n1/memory/<ID>/brainstorm.md`
