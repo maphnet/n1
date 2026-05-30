@@ -68,15 +68,17 @@ In `n1.config.json`:
 
 ```json
 {
-  "reviewPlan": true,
-  "requirePlanApproval": false
+  "planReview": {
+    "reviewPlan": true,
+    "requirePlanApproval": false
+  }
 }
 ```
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `reviewPlan` | boolean | `true` | Enable/disable the plan review CCR step |
-| `requirePlanApproval` | boolean | `false` | If true, present plan to user for approval after review (restores the old checkpoint behavior) |
+| `planReview.reviewPlan` | boolean | `true` | Enable/disable the plan review CCR step |
+| `planReview.requirePlanApproval` | boolean | `false` | If true, present plan to user for approval after review (restores the old checkpoint behavior) |
 
 ### Cost
 
@@ -92,9 +94,10 @@ The review step reads and potentially writes `plan.md`. No new memory file is cr
 |------|-------|--------|
 | plan-review | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` | `plan.md` (in-place fixes) |
 
-## Implementation Notes
+## Implementation Status
 
-- The `n1-start` SKILL.md Step 4 needs to be updated to add the CCR spawn after plan creation
-- The mandatory checkpoint text should be conditional on `requirePlanApproval`
-- Overview.md progress should update after the review pass, not after plan creation
-- The solution-architect agent definition does not need changes — the review behavior is driven by the orchestrator's prompt, not the agent's persona
+Implemented. Changes:
+- `skills/n1-start/SKILL.md` — Step 4b added (plan review CCR), checkpoint made conditional
+- `skills/n1-init/SKILL.md` — `planReview` config section added to wizard and template
+- `.n1/n1.config.json` — `planReview` section added, `"plan"` removed from `escalation.checkpoints`
+- `CLAUDE.md` — dependency map, agent table, and escalation model updated

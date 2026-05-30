@@ -63,6 +63,7 @@ Each step reads ONLY its declared dependencies:
 | analysis | `ticket.md` | `analysis.md` |
 | brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
 | plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
+| plan-review | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` | `plan.md` (in-place fixes) |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
@@ -84,7 +85,7 @@ Tracker MCP tool names are never hardcoded — they're resolved at runtime from 
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
 | product-analyst | sonnet | Read, Tracker MCP | Ticket read |
-| solution-architect | opus | Read, Grep, Glob | Analysis |
+| solution-architect | opus | Read, Grep, Glob | Analysis, Plan review (CCR) |
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
@@ -99,7 +100,7 @@ Models default to agent frontmatter values, overridable via `models` section in 
 
 ### Escalation Model
 
-Fixed checkpoints: after plan (Tech Lead approves) and after PR creation (Tech Lead reviews).
+Fixed checkpoints: after PR creation (Tech Lead reviews). Plan checkpoint is off by default (`requirePlanApproval: false`) — the plan-review CCR step validates the plan automatically. Enable `requirePlanApproval: true` to restore the manual plan checkpoint.
 Confidence-based: low confidence + high blast radius = stop and ask.
 Always escalate: security, architecture, public API changes.
 

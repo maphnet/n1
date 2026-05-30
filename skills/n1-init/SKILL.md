@@ -265,6 +265,22 @@ Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless th
 }
 ```
 
+## Plan Review Configuration
+
+Use defaults. **Do NOT ask** the user about this unless they explicitly requested plan review customization when invoking n1-init.
+
+- `reviewPlan: true` — after plan creation, solution-architect is re-spawned in fresh context to review the plan against specific adversarial criteria with codebase access
+- `requirePlanApproval: false` — if the plan review passes (clean or self-fixed), proceed to implementation without a user checkpoint
+
+```json
+{
+  "planReview": {
+    "reviewPlan": true,
+    "requirePlanApproval": false
+  }
+}
+```
+
 ## Agent Model Configuration
 
 Use default models from agent frontmatter. **Do NOT ask** about model customization unless the user explicitly requested it when invoking n1-init.
@@ -293,10 +309,14 @@ Create all files:
   "tracker": { ... },
   "git": { ... },
   "escalation": {
-    "checkpoints": ["plan", "pr"],
+    "checkpoints": ["pr"],
     "alwaysAskOn": ["security", "architecture", "public-api"]
   },
   "review": { ... },
+  "planReview": {
+    "reviewPlan": true,
+    "requirePlanApproval": false
+  },
   "memory": {
     "ticketContext": true,
     "decisions": true

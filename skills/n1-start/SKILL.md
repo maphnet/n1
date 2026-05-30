@@ -228,11 +228,71 @@ After plan is created:
   ```
 - Update overview: `[x] Plan`, set `step: plan`
 
-**CHECKPOINT:** Present the plan to the user for approval.
+### 4b. PLAN REVIEW (Cross-Context Review)
 
+Read `.n1/n1.config.json` → check `planReview.reviewPlan` (default: `true`).
+
+**If `planReview.reviewPlan` is `false`:** skip to checkpoint logic below.
+
+**If `planReview.reviewPlan` is `true`:**
+
+**Spawn agent:** solution-architect (fresh context — CCR)
+
+Resolve model for `solution-architect`. Spawn with:
+- Content of `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` (including the referenced `docs/plans/<file>.md`)
+- Codebase access (Read, Grep, Glob)
+- Review-oriented instructions (NOT generative — this is a review, not a second plan):
+
+```
+You are reviewing an existing implementation plan. Do NOT rewrite or restructure the plan.
+Your job is to find specific issues in these categories:
+
+1. ASSUMPTION VALIDATION — Does the plan rely on assumptions about the codebase
+   that aren't verified? Use Grep/Read to check: do the referenced files, functions,
+   patterns, and APIs actually exist as described?
+
+2. SCOPE DRIFT — Compare the plan against the ticket. Does it solve what was asked,
+   or has it drifted beyond scope? Flag any tasks that don't trace back to a ticket
+   requirement.
+
+3. MISSING EDGE CASES — Are there failure modes, error paths, or data states the
+   plan doesn't address but should?
+
+4. ORDERING/DEPENDENCY RISKS — Are implementation steps in the right order? Are
+   there hidden dependencies between tasks that could cause issues if executed
+   in the listed sequence?
+
+5. BLAST RADIUS — Does the plan touch more files or systems than necessary? Could
+   the same result be achieved with fewer changes?
+
+If you find issues: fix them in-place in the plan file. State what you changed and why.
+If the plan is clean: state "Plan validated, no issues found."
+
+Output format:
+## Plan Review Result
+**Verdict:** CLEAN | FIXED
+**Changes:** (list of fixes applied, or "None")
+**Verified assumptions:** (list of codebase claims you confirmed via Grep/Read)
+```
+
+After the agent returns:
+- If verdict is FIXED: the plan file was updated in-place by the reviewer
+- Log the review result (verdict + changes) to the orchestrator context for traceability
+
+### Plan Checkpoint (conditional)
+
+Read `.n1/n1.config.json` → check `planReview.requirePlanApproval` (default: `false`).
+
+**If `planReview.requirePlanApproval` is `true`:**
+
+Present the plan to the user for approval:
 "Plan is ready at `docs/plans/<file>`. Please review and approve before I proceed with implementation."
 
-**Wait for explicit approval before continuing.** This is a mandatory checkpoint.
+**Wait for explicit approval before continuing.**
+
+**If `planReview.requirePlanApproval` is `false`:**
+
+Proceed directly to implementation. Log: "Plan review passed — proceeding to implementation."
 
 ### 5. IMPLEMENT
 
