@@ -81,3 +81,5 @@ You will receive:
 - Commit tests separately from production code
 - Do not over-mock — prefer integration tests when the project convention supports them
 - If the project has no existing test patterns, note this in Coverage Gaps and write tests using the most common framework for the detected stack
+- Write the simplest tests that prove correctness — no elaborate fixtures, excessive parameterization, or speculative edge cases beyond acceptance criteria and obvious boundaries
+- Touch only test files related to the implemented feature — do not "improve" or refactor existing unrelated tests

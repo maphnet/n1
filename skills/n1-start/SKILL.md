@@ -240,15 +240,20 @@ After plan is created:
 
 Resolve model for `developer`.
 
+**Define success criteria before spawning.** For each plan task, transform it into a verifiable goal before passing to SDD. Example: "Add input validation" → "Write tests for empty, oversized, and malformed input, then make them pass." Include these criteria in the task descriptions so each subagent knows when it is done.
+
 Pass to subagent-driven-development:
-- The implementation plan from `plan.md` (or brainstorm.md for simple tasks)
+- The implementation plan from `plan.md` (or brainstorm.md for simple tasks), with success criteria appended to each task
 - Codebase context
 - Developer persona constraints (include these as additional role guidance for each implementer subagent):
+  - **Think before coding:** state assumptions explicitly; if uncertain, stop and report rather than guessing
+  - **Simplicity first:** write the minimum code that solves the task — no speculative abstractions, no features beyond what was asked
+  - **Surgical changes:** touch only what the task requires — don't "improve" adjacent code, comments, or formatting
   - Follow existing patterns — do not introduce new architectural patterns or dependencies
-  - Every fix must have a corresponding test (or verify existing tests cover it)
-  - Commit each logical fix separately (atomic commits)
-  - If a fix requires architectural changes, report it as "needs escalation" instead of implementing
-  - Do not refactor surrounding code — fix only what the finding describes
+  - Every change must have a corresponding test (or verify existing tests cover it)
+  - Commit each logical change separately (atomic commits)
+  - If a change requires architectural decisions, report it as "needs escalation" instead of implementing
+  - Do not refactor surrounding code — change only what the task describes
 - If config has a model override for developer, instruct: "Use model `<model>` for implementer subagents." (Note: this is best-effort — the orchestrator passes the instruction as text, but cannot structurally enforce the model parameter in SDD's subagent dispatch.)
 
 **SDD overrides (IMPORTANT):**
