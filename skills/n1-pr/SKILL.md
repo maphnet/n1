@@ -170,6 +170,7 @@ If N1 memory exists for this ticket:
 
 ```
 PR created: <PR_URL>
+PR #: <number>
 
 Title: <title>
 Base: <default branch>
