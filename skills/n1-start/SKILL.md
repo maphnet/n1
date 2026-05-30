@@ -62,7 +62,7 @@ Check if `.n1/memory/<input>/overview.md` exists:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| pr | `overview.md`, `review.md`, `qa.md` | — |
+| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | — |
 
 Each step reads ONLY the files listed in its dependency column, not the full history.
 
@@ -435,7 +435,10 @@ Update overview: `[x] Review`, set `step: review`
 
 **REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
 
-The PR skill handles tech-writer spawning, git push, PR creation, and tracker update.
+Pass to n1-pr:
+- `docUpdateMode: "autonomous"` — doc updates run without user confirmation in the full pipeline
+
+The PR skill handles documentation update, tech-writer spawning, git push, PR creation, and tracker update.
 
 After PR is created:
 - The PR skill reports the URL
@@ -447,6 +450,7 @@ After PR is created:
 Update overview.md:
 - All checkboxes checked
 - Frontmatter: `step: done`
+- Add `docs_updated` field from n1-pr's Phase 1 results (if any doc updates occurred)
 - Final status line added
 
 ## Error Recovery
