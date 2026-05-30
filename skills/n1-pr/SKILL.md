@@ -55,7 +55,53 @@ Read `.n1/n1.config.json` for:
 Parse from branch name using `git.branchPattern`. Example:
 - Branch: `TRID-510` + pattern `{prefix}-{id}` → ticket = `TRID-510`
 
-## Step 2: Generate PR Content
+## Step 2: Documentation Update
+
+**Spawn agent:** tech-writer (Phase 1 only)
+
+Resolve model for `tech-writer`.
+
+### Read doc config:
+Read `.n1/n1.config.json` → check for optional `docs` section:
+- `docs.include` — additional doc paths to scan (array of globs)
+- `docs.exclude` — doc paths to skip (array of globs)
+- `docs.autoUpdate` — if `true`, skip user confirmation (default: `false`)
+
+### Determine mode:
+- If called with `docUpdateMode: "autonomous"` (passed from n1-start) → `autonomous`
+- If `docs.autoUpdate` is `true` in config → `autonomous`
+- Otherwise → `confirm`
+
+### Spawn tech-writer for Phase 1:
+Pass to tech-writer:
+- Default branch name (from Step 1)
+- Paths to memory files: `implementation.md` (if available)
+- Git diff stat output from Step 1
+- Doc config: `docs.include`, `docs.exclude` (if present)
+- Doc update mode: the resolved mode from above
+
+### If mode is `confirm`:
+After tech-writer completes Phase 1 scan, present findings to the user:
+
+```
+Documentation scan complete.
+
+Updates to apply:
+- <file>: <what will be updated> (<confidence>)
+
+Apply or skip? (apply/skip)
+```
+
+- **apply** → tech-writer commits the doc changes
+- **skip** → discard doc changes, proceed to Step 3
+
+### If mode is `autonomous`:
+Tech-writer applies updates and commits without prompting.
+
+### If no stale docs found:
+Proceed directly to Step 3.
+
+## Step 3: Generate PR Content
 
 **If PR title and body are provided as input** (e.g., when called from n1-start after tech-writer already ran): skip tech-writer spawning and use the provided content directly.
 
@@ -69,12 +115,13 @@ Spawn tech-writer with:
 - Ticket ID (extracted from branch name, if available)
 - Paths to memory files: `overview.md`, `review.md`, `qa.md`
 - Git diff stat output from Step 1
+- Doc update report from Step 2 Phase 1 (updated/flagged/needs_review lists) — for the Documentation section in the PR body
 
 The tech-writer agent returns a structured PR title and body.
 
 Present the generated title and body to the user. Ask: **"Create PR with this content? (yes/edit/cancel)"**
 
-## Step 3: Push and Create PR
+## Step 4: Push and Create PR
 
 ```bash
 git push -u origin ${CURRENT_BRANCH}
@@ -87,7 +134,7 @@ gh pr create \
 
 Capture and display the PR URL.
 
-## Step 4: Update Tracker (if configured)
+## Step 5: Update Tracker (if configured)
 
 Read `.n1/n1.config.json`. If `tracker.mcp` is not null:
 
@@ -102,13 +149,23 @@ Read `.n1/n1.config.json`. If `tracker.mcp` is not null:
 
 If tracker operations fail, warn but don't block — the PR is already created.
 
-## Step 5: Update Memory
+## Step 6: Update Memory
 
 If N1 memory exists for this ticket:
 - Update `overview.md`: mark PR step as done, add PR URL
+- Add `docs_updated` to overview.md with the list of files updated, flagged, or skipped:
+  ```yaml
+  docs_updated:
+    - file: README.md
+      confidence: high
+      action: updated
+    - file: docs/migration.md
+      confidence: none
+      action: skipped
+  ```
 - Frontmatter: set `step: pr`
 
-## Step 6: Report
+## Step 7: Report
 
 ```
 PR created: <PR_URL>
