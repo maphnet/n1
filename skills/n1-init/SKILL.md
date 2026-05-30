@@ -298,6 +298,58 @@ qa-engineer        sonnet
 tech-writer        sonnet
 ```
 
+## Model Version Pinning
+
+Ask the user whether to pin model versions for predictable agent behavior.
+
+```
+Pin specific model versions so agents don't change behavior when Anthropic releases updates?
+
+1 — Pin to current versions (recommended)
+2 — Custom versions
+3 — Skip (use latest always)
+```
+
+### If 1 (Pin to current):
+
+Set:
+- `ANTHROPIC_DEFAULT_OPUS_MODEL` → `claude-opus-4-6`
+- `ANTHROPIC_DEFAULT_SONNET_MODEL` → `claude-sonnet-4-6`
+
+### If 2 (Custom):
+
+Ask for each tier separately:
+
+```
+Opus model ID (e.g. claude-opus-4-6):
+```
+
+Then:
+
+```
+Sonnet model ID (e.g. claude-sonnet-4-6):
+```
+
+**Validate** each input matches the pattern `claude-(opus|sonnet|haiku)-*`. Reject bare tier names (`opus`, `sonnet`) or invalid strings — ask again.
+
+### If 3 (Skip):
+
+No env vars written. Tier aliases resolve to latest platform default.
+
+### On reconfiguration (n1-init re-run):
+
+If `.claude/settings.json` already has `ANTHROPIC_DEFAULT_OPUS_MODEL` or `ANTHROPIC_DEFAULT_SONNET_MODEL` in the `env` block, show current values:
+
+```
+Current pinned versions:
+  opus   → claude-opus-4-6
+  sonnet → claude-sonnet-4-6
+
+1 — Keep current
+2 — Update
+3 — Remove (use latest always)
+```
+
 ## Write Configuration and Structure
 
 Create all files:
@@ -340,6 +392,23 @@ mkdir -p .n1/decisions
 mkdir -p .n1/telemetry
 ```
 
+**`.claude/settings.json`** — model version pinning (only if user chose option 1 or 2 above):
+
+1. Read existing `.claude/settings.json` or start with `{}`
+2. Read existing `env` block or start with `{}`
+3. Set `ANTHROPIC_DEFAULT_OPUS_MODEL` and `ANTHROPIC_DEFAULT_SONNET_MODEL` in the `env` block
+4. Write back — preserve all other keys (`permissions`, `allowedTools`, etc.)
+
+Example result:
+```json
+{
+  "env": {
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6"
+  }
+}
+```
+
 **`.gitignore`** — append `.n1/` if not already present:
 ```bash
 echo "" >> .gitignore
@@ -356,12 +425,14 @@ N1 is ready.
 Tracker: Jira (TRID) / YouTrack / None
 Default branch: main
 Branch pattern: {prefix}-{id}
+Model pinning: claude-opus-4-6, claude-sonnet-4-6 / not configured
 
 Created:
   .n1/n1.config.json
   .n1/memory/
   .n1/decisions/
   .n1/telemetry/
+  .claude/settings.json updated (if pinning configured)
   .gitignore updated
 
 Next: Use /n1:n1-start <ticket-or-description> to begin working on a task.
