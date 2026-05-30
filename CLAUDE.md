@@ -47,6 +47,7 @@ Skills are lightweight controllers that delegate all heavy work:
 | n1-start | product-analyst, solution-architect, qa-engineer agents + superpowers (brainstorming, writing-plans, SDD) | Full pipeline |
 | n1-review | code-reviewer, security-reviewer, developer agents | Review + fix loop |
 | n1-pr | tech-writer agent + inline git/gh/MCP | Doc update, push, create PR, update tracker |
+| n1-ci | developer agent + inline gh CLI | Post-PR CI watch, classify failures, fix loop |
 | n1-init | (inline: analysis + prompts) | Project setup wizard |
 
 Superpowers calls use the `superpowers:` prefix. Agent spawns use N1's own agent definitions. Each gets fresh context — the orchestrator never accumulates full history.
@@ -68,6 +69,7 @@ Each step reads ONLY its declared dependencies:
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
 | pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | `overview.md` (updates) |
+| ci | `overview.md`, `plan.md`, `implementation.md` | `overview.md` (CI status) |
 
 ### Tracker Routing
 
@@ -86,7 +88,7 @@ Tracker MCP tool names are never hardcoded — they're resolved at runtime from 
 |-------|---------------|-------|----------------|
 | product-analyst | sonnet | Read, Tracker MCP | Ticket read |
 | solution-architect | opus | Read, Grep, Glob, Bash | Analysis, Bug investigation, Plan review (CCR) |
-| developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle |
+| developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA |
