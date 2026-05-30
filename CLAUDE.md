@@ -46,7 +46,7 @@ Skills are lightweight controllers that delegate all heavy work:
 |----------|-------------|---------|
 | n1-start | product-analyst, solution-architect, qa-engineer agents + superpowers (brainstorming, writing-plans, SDD) | Full pipeline |
 | n1-review | code-reviewer, security-reviewer, developer agents | Review + fix loop |
-| n1-pr | tech-writer agent + inline git/gh/MCP | Push, create PR, update tracker |
+| n1-pr | tech-writer agent + inline git/gh/MCP | Doc update, push, create PR, update tracker |
 | n1-init | (inline: analysis + prompts) | Project setup wizard |
 
 Superpowers calls use the `superpowers:` prefix. Agent spawns use N1's own agent definitions. Each gets fresh context — the orchestrator never accumulates full history.
@@ -67,7 +67,7 @@ Each step reads ONLY its declared dependencies:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| pr | `overview.md`, `review.md`, `qa.md` | — |
+| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | — |
 
 ### Tracker Routing
 
@@ -90,7 +90,7 @@ Tracker MCP tool names are never hardcoded — they're resolved at runtime from 
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA |
-| tech-writer | sonnet | Read, Grep | PR content |
+| tech-writer | sonnet | Read, Grep, Edit, Write, Glob | Doc update, PR content |
 
 Models default to agent frontmatter values, overridable via `models` section in `n1.config.json`.
 
