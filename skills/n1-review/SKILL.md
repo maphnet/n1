@@ -113,6 +113,8 @@ Pass to developer:
 
 After developer fixes are applied, go back to **Phase 2** (full re-review: find → verify → report).
 
+**Oscillation guard:** fingerprint each confirmed Critical/High finding (file + line + title). If a fix attempt does not reduce the confirmed Critical/High count, or the same fingerprint reappears after being marked fixed, escalate early rather than burning the remaining cycles.
+
 Maximum 3 review-fix cycles before escalating to user.
 
 **If no Critical or High confirmed findings (clean pass):**

@@ -84,7 +84,7 @@ No `fetch`/`pull` is performed — the branch is created from the local default 
 
 Check if `.n1/memory/<input>/overview.md` exists:
 
-- **If exists:** Read the overview frontmatter to determine current step. Run **Ensure Working Branch(`<ID>`)** (see Working Branch above) to re-check out the branch — this covers resuming from `main` or a different branch. Then resume from where work left off: read the dependency files for the current step (see dependency map below) and continue.
+- **If exists:** Read the overview frontmatter to determine current step. Run **Ensure Working Branch(`<ID>`)** (see Working Branch above) to re-check out the branch — this covers resuming from `main` or a different branch. Then resume from where work left off: read the dependency files for the current step (see dependency map below) and continue. **Also read the loop counters** (`qa_fix_cycle`, `review_fix_cycle`, `clean_passes`, and `ci_fix_cycle` if present) so bounded loops resume at their true count, not zero (see Loop-Counter Durability below).
 - **If not exists:** Fresh start. Create `.n1/memory/<ID>/` directory.
 
 ### Step dependency map
@@ -102,6 +102,11 @@ Check if `.n1/memory/<input>/overview.md` exists:
 | ci | `overview.md`, `plan.md`, `implementation.md` | `overview.md` (CI status) |
 
 Each step reads ONLY the files listed in its dependency column, not the full history.
+
+### Loop-counter durability & crash-safe checkpointing
+
+- **Loop counters live in overview frontmatter**, never only in orchestrator context: `qa_fix_cycle`, `review_fix_cycle`, `clean_passes` (and `ci_fix_cycle`, owned by n1-ci). Increment them in the file as each loop turns and read them back on resume. A bound held only in context resets to zero on restart, silently defeating it.
+- **Overview is the single source of truth for progress.** Each step writes its output file FIRST, then updates `step:`/checkbox in overview LAST. On resume, a step counts as done only if overview says so. If a crash lands between the two writes (output file exists but overview still points at the prior step), re-running is safe because every artifact write is a full overwrite — idempotent, never an append.
 
 **Dependency integrity guard (applies to every step).** Before spawning a step's agent or sub-skill, verify each of that step's declared dependency files exists and is non-empty. If any is missing or empty — a realistic state when resuming from an arbitrary step — **STOP and report which file is missing rather than proceeding** with a degraded handoff. Do not let an agent improvise around an absent `implementation.md` or an empty `analysis.md`. (`ticket.md` with no acceptance criteria is handled upstream by product-analyst and is not a hard stop.)
 
@@ -188,9 +193,10 @@ The task has been structured. Would you like to create a tracker ticket?
 ---
 ticket: <ID>
 step: ticket
-substep: 0
-iteration: 1
 last_updated: <ISO timestamp>
+qa_fix_cycle: 0
+review_fix_cycle: 0
+clean_passes: 0
 ---
 
 # <ID>: <Title>
@@ -253,6 +259,8 @@ Based on brainstorming output, determine complexity:
 - **Complex task** (multiple components, architectural decisions, needs research) → Continue to **PLAN**
 
 State your reasoning: "This task is [simple/complex] because [reason]. [Skipping to implementation / Proceeding with detailed planning]."
+
+**Deterministic floor.** The "simple" path skips PLAN and therefore PLAN-REVIEW (the CCR safety net). Before classifying a task as simple, check `analysis.md` for blast-radius signals: if it touches more than ~2 files, modifies a public API, or flags security/architecture concerns, treat it as complex regardless of the judgment call. When uncertain, prefer complex — plan-review is cheap insurance.
 
 ### 4. PLAN (complex tasks only)
 
@@ -440,7 +448,8 @@ After the agent returns:
 - If QA verdict is FAIL (test reveals a bug):
   - Report bug details to the user
   - Spawn developer agent (resolve model for `developer`) to fix the bug
-  - Re-run QA after fix
+  - Increment `qa_fix_cycle` in overview frontmatter, then re-run QA
+  - **Bounded loop:** stop after `qa.maxFixAttempts` cycles (config, default 3). On exhaustion, escalate instead of looping forever: "After <N> QA fix cycles this test still fails: [details]. Please advise." The counter is persisted, so the bound survives a resume.
 
 ### 7. REVIEW
 
@@ -463,6 +472,7 @@ After BOTH return, merge findings:
 - Combine outputs into `.n1/memory/<ID>/review.md`
 - Prefix code-reviewer findings with [CR-N], security-reviewer with [SEC-N]
 - Combined verdict: FAIL if either reviewer returned FAIL
+- **Partial-failure handling:** if one reviewer errors, times out, or returns malformed output, retry that reviewer once. If it still fails, proceed with the other reviewer's findings, record the gap explicitly in review.md ("⚠ security-reviewer did not complete — review incomplete"), and do NOT treat the missing reviewer as a PASS.
 
 ### 8. FIX (if review failed)
 
@@ -477,14 +487,16 @@ Pass to developer:
 - List of affected files
 
 After developer returns:
+- Increment `review_fix_cycle` in overview frontmatter (so the bound survives a resume)
 - Go back to **Step 7** (REVIEW) — re-run both reviewers
+- **Oscillation guard:** fingerprint each confirmed Critical/High finding (file + line + title). If a fix attempt does NOT reduce the confirmed Critical/High count, or the same fingerprint reappears after being marked fixed, escalate early — don't burn the remaining cycles making negative progress.
 - Maximum 3 review-fix cycles before escalating to user:
   "After 3 review cycles, these findings remain unresolved: [list]. Please advise."
 
 If both reviewers returned PASS:
-- Check review count vs `review.minCleanPasses` from config (minimum number of consecutive clean passes required)
-- If clean passes < minCleanPasses: go back to Step 7
-- If clean passes >= minCleanPasses: proceed
+- Increment `clean_passes` in overview frontmatter
+- If `clean_passes` < `review.minCleanPasses` (config, minimum consecutive clean passes): go back to Step 7
+- If `clean_passes` >= `review.minCleanPasses`: proceed
 
 Update overview: `[x] Review`, set `step: review`
 
@@ -531,10 +543,13 @@ Update overview.md:
 
 ## Error Recovery
 
-If any step fails:
-1. Note the failure in overview.md under `## Escalations`
-2. Report to the user with context
-3. On next `/n1:n1-start <ID>`, resume support will pick up from the last successful step
+If any step fails, first classify the failure:
+
+- **Transient** (tracker/MCP timeout, `gh` rate-limit, agent-spawn hiccup, network blip) → retry once or twice with brief backoff before escalating. Most external-call failures are transient.
+- **Terminal or ambiguous** (logic error, repeated failure after retry, an unresolvable blocker) → do not retry blindly:
+  1. Note the failure in overview.md under `## Escalations`
+  2. Report to the user with context
+  3. On next `/n1:n1-start <ID>`, resume support picks up from the last successful step
 
 ## Context Management
 

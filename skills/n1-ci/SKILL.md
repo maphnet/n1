@@ -204,8 +204,8 @@ Output format:
 
 1. Check for `unknown` category fixes with confidence below threshold → present to user (Step 5b flow)
 2. Push changes if developer didn't already: `git push`
-3. Increment fix cycle counter
-4. If cycle counter < `maxFixAttempts` → go back to **Step 3** (Poll for new CI run)
+3. Increment `ci_fix_cycle` in overview frontmatter (durable — the bound survives a resume)
+4. If `ci_fix_cycle` < `maxFixAttempts` → go back to **Step 3** (Poll for new CI run)
 5. If cycle counter >= `maxFixAttempts` → go to **Step 6b** (Exhausted)
 
 ### Step 6b: Max Attempts Exhausted
@@ -231,7 +231,7 @@ How would you like to proceed?
 ```
 
 **Wait for user response:**
-- **1:** Accept user guidance, spawn developer with the guidance as additional context, increment max attempts by 1, go back to Step 3
+- **1:** Accept user guidance, spawn developer with the guidance as additional context, increment max attempts by 1 — up to a hard ceiling of 2×`maxFixAttempts` total, beyond which only options 2 and 3 are offered — log the extension to the CI status section, then go back to Step 3
 - **2:** Proceed to Step 7 with CI status = failing
 - **3:** Wait for user to say "continue", then go back to Step 3 (reset cycle counter)
 
