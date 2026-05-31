@@ -366,6 +366,7 @@ Defaults:
 ```
 product-analyst    sonnet
 solution-architect opus
+planner            opus
 developer          opus
 code-reviewer      opus
 security-reviewer  opus
@@ -405,6 +406,7 @@ Create all files:
   "models": {
     "product-analyst": "sonnet",
     "solution-architect": "opus",
+    "planner": "opus",
     "developer": "opus",
     "code-reviewer": "opus",
     "security-reviewer": "opus",

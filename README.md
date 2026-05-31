@@ -2,7 +2,7 @@
 
 AI-driven development orchestrator for Claude Code. No one writes the code.
 
-N1 orchestrates the full development cycle using 7 specialized agent personas and [Superpowers](https://github.com/obra/superpowers) sub-skills. Agents handle autonomous work (analysis, QA, review, fixes, PR content); Superpowers handles interactive steps (brainstorming, planning, implementation dispatch). Adds tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, parallel security review, and a mandatory review loop.
+N1 orchestrates the full development cycle using 8 specialized agent personas and [Superpowers](https://github.com/obra/superpowers) sub-skills. Agents handle autonomous work (analysis, QA, review, fixes, PR content); Superpowers handles interactive steps (brainstorming, planning, implementation dispatch). Adds tracker integration, per-ticket memory, adaptive workflow routing, confidence-based escalation, parallel security review, and a mandatory review loop.
 
 ## Requirements
 
@@ -52,7 +52,7 @@ Input (ticket or brain dump)
   → Ticket read (product-analyst agent)
   → Codebase analysis (solution-architect agent)
   → Brainstorm (superpowers:brainstorming, with architect's analysis)
-  → Plan (superpowers:writing-plans) — if complex
+  → Plan (planner agent → superpowers:writing-plans) — if complex
   → Implement (superpowers:SDD + developer persona)
   → QA (qa-engineer agent)
   → Review (code-reviewer + security-reviewer agents, parallel)
@@ -61,7 +61,7 @@ Input (ticket or brain dump)
   → Tracker update
 ```
 
-- **Agent personas:** 7 specialized agents with scoped tools and configurable models
+- **Agent personas:** 8 specialized agents with scoped tools and configurable models
 - **Parallel security review:** code-reviewer and security-reviewer run simultaneously
 - **Adaptive routing:** simple tasks skip the plan step
 - **Resume support:** interrupt anytime, `/n1:n1-start TRID-510` picks up where you left off
@@ -105,7 +105,7 @@ Created tickets can optionally be tagged with a service name. When `ticketTaggin
 
 ## How It Works
 
-N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation model: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while Superpowers sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). Each agent gets fresh context with scoped tools.
+N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation model: 8 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while Superpowers sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). Each agent gets fresh context with scoped tools.
 
 ### Agent Personas
 
@@ -113,6 +113,7 @@ N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation
 |-------|---------------|------|
 | product-analyst | sonnet | Ticket distillation and requirements extraction |
 | solution-architect | opus | Codebase analysis and architecture assessment |
+| planner | opus | Isolated implementation-plan writing |
 | developer | opus | Implementation and review fix cycles |
 | code-reviewer | opus | Adversarial code quality review |
 | security-reviewer | opus | Security vulnerability review (OWASP, CWE) |

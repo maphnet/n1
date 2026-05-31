@@ -273,19 +273,19 @@ Before calling superpowers:writing-plans, spawn solution-architect again with:
 
 Write output to `.n1/memory/<ID>/analysis.md` (overwrite with enriched version).
 
-**REQUIRED SUB-SKILL:** Use superpowers:writing-plans to create a detailed implementation plan.
+**Spawn agent:** planner
 
-Pass to writing-plans:
+Resolve model for `planner` (see Model Resolution above).
+
+The planner runs `superpowers:writing-plans` in an isolated subagent context. This is deliberate: the writing-plans skill ends with an "Execution Handoff" step that asks the user which execution mode to use, and when invoked in-context that prompt intermittently leaks to the user even though N1 predetermines the execution mode. A dispatched subagent has no interactive channel — any such prompt returns to the orchestrator as text and is absorbed here, never shown to the user. The planner also lacks `Bash`, so it cannot chain into implementation or commit.
+
+Spawn the planner agent with:
 - Content of `ticket.md`, `brainstorm.md`, and updated `analysis.md`
 - Codebase context discovered during analysis
+- **Output path:** `.n1/memory/<ID>/plan.md` — instruct the planner to write the plan there and nowhere else, and NOT to commit it (`.n1/` is gitignored and ephemeral; N1 owns this content in per-ticket memory).
+- Directive: "Do NOT include any `REQUIRED SUB-SKILL` execution directive in the plan body — N1 controls execution mode; the plan contains only implementation tasks."
 
-**Writing-plans overrides (IMPORTANT):**
-- **Plan location:** Write the plan directly to `.n1/memory/<ID>/plan.md` — NOT to `docs/superpowers/plans/`. The writing-plans skill honors "user preferences for plan location override this default," so this is the sanctioned location override.
-- **Do NOT commit the plan.** `.n1/` is gitignored and ephemeral — N1 owns this content in per-ticket memory. No plan artifact may be committed to the target repo.
-- Do NOT include any `REQUIRED SUB-SKILL` execution directive in the plan document header. N1 controls execution mode — the plan should contain only implementation tasks, not instructions about which skill executes them.
-- Omit the "Execution Handoff" section entirely. Regardless of which execution options that section lists in any Superpowers version (e.g. "Subagent-Driven" vs "Inline Execution"/"Parallel Session"), do NOT present execution options to the user — N1 always invokes SDD directly (see Step 5).
-
-After plan is created (the full plan body already lives in `.n1/memory/<ID>/plan.md` per the override above):
+After the planner returns (the full plan body already lives in `.n1/memory/<ID>/plan.md`, written by the planner):
 - Update overview: `[x] Plan`, set `step: plan`
 - Record a 2-3 sentence summary of the approach in overview's `## Key Decisions` section
 
