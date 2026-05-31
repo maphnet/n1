@@ -26,39 +26,21 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 - **Always test on a separate repo before committing**
 - **Dogfooding:** use N1 skills on the N1 repo itself
 
-## Development & Release Workflow
+## Development Workflow
 
-Two distinct loops — do not conflate them.
-
-### Inner loop (iterating on a feature)
-
-Use `--plugin-dir`, which loads the **working tree live** (uncommitted edits included). No commit, no version bump, no reinstall.
+**Always develop via `--plugin-dir`** — it loads the **working tree live** (uncommitted edits included). No install, no commit, no version bump, no reinstall.
 
 ```
 claude --plugin-dir C:\Dev\n1   # from a test project
 # edit files → /reload-plugins → changes are live
 ```
 
-Do NOT bump the version or commit just to test — `--plugin-dir` already sees uncommitted changes.
+Do NOT install N1 as a user-scope plugin for local development. A `file://` marketplace install copies from committed git HEAD into a cache, so local edits never show up without commit + version bump + reinstall — `--plugin-dir` avoids all of that.
 
-### Outer loop (releasing a finished feature)
+### Notes for any future install/publish
 
-Only when a feature is **done and working**:
-
-1. `git commit` the changes
-2. Bump `version` in **both** files (they must match — `claude plugin tag` validates this):
-   - `.claude-plugin/plugin.json`
-   - `.claude-plugin/marketplace.json`
-3. `claude plugin marketplace update n1`
-4. `claude plugin update n1@n1` (restart Claude Code to apply)
-
-### Why the install loop needs all four steps
-
-A `file://` marketplace install **copies from committed git HEAD into the cache** — not from the working tree. So an uncommitted edit, a commit alone, or `plugin update` without a version bump will all leave the installed copy stale. The version bump is what makes `update` re-copy.
-
-### Dependency declaration
-
-Plugin dependencies must be marketplace-qualified. A bare `"superpowers"` resolves to `superpowers@n1` (n1's own marketplace) and fails to load. Use the marketplace the dependency actually lives in, e.g. `"superpowers@claude-plugins-official"`.
+- A `file://` marketplace install copies from committed git **HEAD** into a cache, not the working tree. Refreshing it requires a `version` bump (in **both** `plugin.json` and `marketplace.json`, which must match) followed by `claude plugin marketplace update n1` + `claude plugin update n1@n1`.
+- The `plugin.json` schema rejects marketplace-qualified dependency names (`name@marketplace` gives `dependencies.0: Invalid input`). Use a bare name, e.g. `{ "name": "superpowers", "version": "^4.0" }`. The bare-name dependency resolver assumes the declaring plugin's own marketplace, which is why install-time dependency resolution against an external marketplace is unreliable — another reason to prefer `--plugin-dir`.
 
 ## Conventions
 
