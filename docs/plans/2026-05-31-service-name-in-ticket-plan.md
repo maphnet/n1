@@ -204,23 +204,23 @@ git commit -m "feat(n1-start): tag created tickets with service name when enable
 ## Task 3: Document the new config in README and CLAUDE.md
 
 **Files:**
-- Modify: `README.md` — `## Configuration` section (lines 107-111)
-- Modify: `CLAUDE.md` — near the Tracker Routing / config notes (around line 73)
+- Modify: `README.md` — `## Tracker Support` section (config note at line 102)
+- Modify: `CLAUDE.md` — after the Tracker Routing table (ends line 97)
 
-**Step 1: Add a README configuration bullet**
+**Step 1: Add a README note**
 
-In `README.md`, in the `## Configuration` bullet list (after line 110, the `tracker.prefix`/`git.branchPattern` bullet), add:
+In `README.md`, directly after line 102 (`Tracker routing is config-driven via ...`), add a new paragraph:
 
 ```markdown
-- **Ticket tagging:** `ticketTagging.enabled` + `ticketTagging.service` (set at `n1-init`, off by default) prefix N1-created tickets as `{service} | <title>` and add a `**Service:** <service>` line to the description.
+Created tickets can optionally be tagged with a service name. When `ticketTagging.enabled` is set (off by default; configured by `n1-init`), N1-created tickets get a `{service} | <title>` summary prefix and a `**Service:** <service>` line in the description.
 ```
 
 **Step 2: Add a CLAUDE.md note**
 
-In `CLAUDE.md`, add a one-line note in the configuration/tracker area (near line 73) so future Claude sessions know the field exists:
+In `CLAUDE.md`, immediately after the Tracker Routing table (after line 97), add:
 
 ```markdown
-- **Ticket tagging:** When `ticketTagging.enabled` is true, `n1-start` prefixes created tickets with `ticketTagging.service` (`{service} | title`) and adds a `**Service:**` line to the description. Off by default; configured by `n1-init`. Creation only — existing tickets are never re-tagged.
+When `ticketTagging.enabled` is true, `n1-start` prefixes created tickets with `ticketTagging.service` (`{service} | title`) and adds a `**Service:**` line to the description. Off by default; configured by `n1-init`. Creation only — existing tickets are never re-tagged.
 ```
 
 **Step 3: Verify**
