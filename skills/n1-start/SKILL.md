@@ -149,21 +149,28 @@ The task has been structured. Would you like to create a tracker ticket?
 
 **If 1 (Yes):**
 1. Extract the Title and structured content from the product-analyst output
-2. Create the ticket via MCP:
+2. **Resolve ticket tagging.** Read `ticketTagging` from `.n1/n1.config.json`.
+   - **If `ticketTagging.enabled` is `true` AND `ticketTagging.service` is a non-empty string** → tagging is ON:
+     - `<summary>` = `<service> | <Title>` — but if `<Title>` already begins with `<service> |`, use `<Title>` unchanged (idempotency guard for resume/retry).
+     - `<description>` = `**Service:** <service>` as the first line, a blank line, then the Core Ask + Description + Acceptance Criteria sections.
+   - **Otherwise** (block missing, `enabled` false, or `service` empty) → tagging is OFF:
+     - `<summary>` = the Title from product-analyst output.
+     - `<description>` = the Core Ask + Description + Acceptance Criteria sections.
+3. Create the ticket via MCP:
    - **YouTrack:** Call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
      - `project`: `tracker.projectKey`
-     - `summary`: the Title from product-analyst output
-     - `description`: the Core Ask + Description + Acceptance Criteria sections
+     - `summary`: `<summary>`
+     - `description`: `<description>`
    - **Jira:** First resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources`, then call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
      - `cloudId`: resolved cloud ID
      - `projectKey`: `tracker.projectKey`
      - `issueTypeName`: "Task"
-     - `summary`: the Title from product-analyst output
-     - `description`: the Core Ask + Description + Acceptance Criteria sections
-3. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
-4. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
-5. Report: "Created ticket **[<ID>](<ticket URL>)**: <title>"
-6. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
+     - `summary`: `<summary>`
+     - `description`: `<description>`
+4. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
+5. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
+6. Report: "Created ticket **[<ID>](<ticket URL>)**: <title>"
+7. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
 
 **If 2 (No):**
 - Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
