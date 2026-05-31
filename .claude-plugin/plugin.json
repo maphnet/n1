@@ -5,6 +5,6 @@
   "author": { "name": "N1 Team" },
   "license": "MIT",
   "dependencies": [
-    { "name": "superpowers", "version": "^4.0" }
+    { "name": "superpowers", "version": "^5.0" }
   ]
 }

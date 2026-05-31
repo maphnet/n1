@@ -219,6 +219,10 @@ Pass to writing-plans:
 - Content of `ticket.md`, `brainstorm.md`, and updated `analysis.md`
 - Codebase context discovered during analysis
 
+**Writing-plans overrides (IMPORTANT):**
+- Do NOT include any `REQUIRED SUB-SKILL` execution directive in the plan document header. N1 controls execution mode — the plan should contain only implementation tasks, not instructions about which skill executes them.
+- Omit the "Execution Handoff" section entirely — do not offer the user a choice between SDD and parallel session. N1 will invoke SDD directly.
+
 After plan is created:
 - Save reference to `.n1/memory/<ID>/plan.md`:
   ```markdown
@@ -301,7 +305,11 @@ Proceed directly to implementation. Log: "Plan review passed — proceeding to i
 
 ### 5. IMPLEMENT
 
+**Execution mode is predetermined:** Do NOT present execution options to the user. Do NOT invoke superpowers:executing-plans. Always use superpowers:subagent-driven-development regardless of what the plan document or writing-plans suggests.
+
 **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development to implement the plan task by task.
+
+**Before passing plan content:** If plan.md or the referenced plan file contains a `REQUIRED SUB-SKILL: Use superpowers:executing-plans` directive (legacy header from older Superpowers versions), IGNORE it. The authoritative execution skill is superpowers:subagent-driven-development as specified here.
 
 Resolve model for `developer`.
 
@@ -325,6 +333,7 @@ Pass to subagent-driven-development:
 - Do NOT call `superpowers:finishing-a-development-branch` after tasks complete — N1 orchestrator handles the post-implementation pipeline (QA, Review, PR).
 - Do NOT use `superpowers:using-git-worktrees` — work on the current branch directly. N1 manages the branch lifecycle.
 - Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
+- Run in CONTINUOUS mode: do NOT pause between tasks to ask for user approval or feedback. Execute all plan tasks sequentially without stopping. The only valid reasons to stop are: (1) a blocker you cannot resolve from context, (2) a decision that hits the "Low confidence + High blast radius" escalation threshold below, or (3) all tasks complete.
 
 ### Confidence-Based Escalation
 
