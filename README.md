@@ -7,7 +7,7 @@ N1 orchestrates the full development cycle using 7 specialized agent personas an
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) 2.1+
-- [Superpowers](https://github.com/obra/superpowers) plugin ^4.0
+- [Superpowers](https://github.com/obra/superpowers) plugin ^5.0
 - `git` and `gh` (GitHub CLI) on PATH
 - Optional: Jira (Atlassian MCP) or YouTrack MCP for tracker integration
 

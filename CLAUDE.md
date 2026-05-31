@@ -11,13 +11,13 @@ Russian is prohibited in any committed file.
 
 ## What This Is
 
-N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR). It uses a **hybrid delegation model**: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^4.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR). It uses a **hybrid delegation model**: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^5.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
 
 ## Stack
 
 - **Runtime:** Bash (hooks), Markdown (skills, agents) — no npm, no Node.js
 - **Plugin manifest:** `.claude-plugin/plugin.json`
-- **Dependency:** Superpowers plugin ^4.0
+- **Dependency:** Superpowers plugin ^5.0
 
 ## Testing
 
@@ -40,7 +40,7 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 ### Notes for any future install/publish
 
 - A `file://` marketplace install copies from committed git **HEAD** into a cache, not the working tree. Refreshing it requires a `version` bump (in **both** `plugin.json` and `marketplace.json`, which must match) followed by `claude plugin marketplace update n1` + `claude plugin update n1@n1`.
-- The `plugin.json` schema rejects marketplace-qualified dependency names (`name@marketplace` gives `dependencies.0: Invalid input`). Use a bare name, e.g. `{ "name": "superpowers", "version": "^4.0" }`. The bare-name dependency resolver assumes the declaring plugin's own marketplace, which is why install-time dependency resolution against an external marketplace is unreliable — another reason to prefer `--plugin-dir`.
+- The `plugin.json` schema rejects marketplace-qualified dependency names (`name@marketplace` gives `dependencies.0: Invalid input`). Use a bare name, e.g. `{ "name": "superpowers", "version": "^5.0" }`. The bare-name dependency resolver assumes the declaring plugin's own marketplace, which is why install-time dependency resolution against an external marketplace is unreliable — another reason to prefer `--plugin-dir`.
 
 ## Conventions
 
