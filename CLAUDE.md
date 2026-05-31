@@ -26,6 +26,40 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 - **Always test on a separate repo before committing**
 - **Dogfooding:** use N1 skills on the N1 repo itself
 
+## Development & Release Workflow
+
+Two distinct loops — do not conflate them.
+
+### Inner loop (iterating on a feature)
+
+Use `--plugin-dir`, which loads the **working tree live** (uncommitted edits included). No commit, no version bump, no reinstall.
+
+```
+claude --plugin-dir C:\Dev\n1   # from a test project
+# edit files → /reload-plugins → changes are live
+```
+
+Do NOT bump the version or commit just to test — `--plugin-dir` already sees uncommitted changes.
+
+### Outer loop (releasing a finished feature)
+
+Only when a feature is **done and working**:
+
+1. `git commit` the changes
+2. Bump `version` in **both** files (they must match — `claude plugin tag` validates this):
+   - `.claude-plugin/plugin.json`
+   - `.claude-plugin/marketplace.json`
+3. `claude plugin marketplace update n1`
+4. `claude plugin update n1@n1` (restart Claude Code to apply)
+
+### Why the install loop needs all four steps
+
+A `file://` marketplace install **copies from committed git HEAD into the cache** — not from the working tree. So an uncommitted edit, a commit alone, or `plugin update` without a version bump will all leave the installed copy stale. The version bump is what makes `update` re-copy.
+
+### Dependency declaration
+
+Plugin dependencies must be marketplace-qualified. A bare `"superpowers"` resolves to `superpowers@n1` (n1's own marketplace) and fails to load. Use the marketplace the dependency actually lives in, e.g. `"superpowers@claude-plugins-official"`.
+
 ## Conventions
 
 - **Skill authoring:** Always use `/writing-skills` skill when creating or modifying skills
