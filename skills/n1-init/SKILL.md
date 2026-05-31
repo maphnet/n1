@@ -145,13 +145,16 @@ Set config:
     "mcp": "plugin_atlassian_atlassian",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
+    "assignToCreator": true,
     "operations": {
       "readTicket": "getJiraIssue",
       "getTransitions": "getTransitionsForJiraIssue",
       "moveStatus": "transitionJiraIssue",
       "addComment": "addCommentToJiraIssue",
       "search": "searchJiraIssuesUsingJql",
-      "createIssue": "createJiraIssue"
+      "createIssue": "createJiraIssue",
+      "getCurrentUser": "atlassianUserInfo",
+      "assign": "editJiraIssue"
     },
     "statuses": {
       "todo": "<detected or manual>",
@@ -203,13 +206,16 @@ Set config:
     "mcp": "youtrack",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
+    "assignToCreator": true,
     "operations": {
       "readTicket": "get_issue",
       "getComments": "get_issue_comments",
       "moveStatus": "update_issue",
       "addComment": "add_issue_comment",
       "search": "search_issues",
-      "createIssue": "create_issue"
+      "createIssue": "create_issue",
+      "getCurrentUser": "get_current_user",
+      "assign": "change_issue_assignee"
     },
     "statuses": {
       "todo": "<detected or manual>",
