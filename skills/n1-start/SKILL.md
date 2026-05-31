@@ -237,6 +237,7 @@ Pass to brainstorming:
 **Brainstorming overrides (IMPORTANT):**
 - **Spec location:** Write the design doc directly to `.n1/memory/<ID>/brainstorm.md` — NOT to `docs/superpowers/specs/`. The brainstorming skill honors "user preferences for spec location override this default," so this is the sanctioned location override. The skill's User Review Gate message will reference this path.
 - **Do NOT commit the spec.** `.n1/` is gitignored and ephemeral — N1 owns this content in per-ticket memory. No spec artifact may be committed to the target repo.
+- **Stop after the design; do NOT auto-invoke `writing-plans`.** SP 5.1 brainstorming treats "invoke writing-plans" as its terminal state ("the ONLY skill you invoke after brainstorming is writing-plans"). Override this: once the design is written to `brainstorm.md` and approved, hand control back to the N1 orchestrator. N1 runs its own Complexity Decision, a second-pass analysis, and then invokes `writing-plans` itself with the overrides in Step 4. If brainstorming auto-chained into `writing-plans` directly, the plan would be produced WITHOUT N1's location and execution-handoff overrides — writing to `docs/superpowers/plans/` and offering execution options. Do not let it.
 
 After brainstorming completes (the design already lives in `.n1/memory/<ID>/brainstorm.md` per the override above):
 - Update overview: `[x] Brainstorm`, set `step: brainstorm`
@@ -271,7 +272,7 @@ Pass to writing-plans:
 - **Plan location:** Write the plan directly to `.n1/memory/<ID>/plan.md` — NOT to `docs/superpowers/plans/`. The writing-plans skill honors "user preferences for plan location override this default," so this is the sanctioned location override.
 - **Do NOT commit the plan.** `.n1/` is gitignored and ephemeral — N1 owns this content in per-ticket memory. No plan artifact may be committed to the target repo.
 - Do NOT include any `REQUIRED SUB-SKILL` execution directive in the plan document header. N1 controls execution mode — the plan should contain only implementation tasks, not instructions about which skill executes them.
-- Omit the "Execution Handoff" section entirely — do not offer the user a choice between SDD and parallel session. N1 will invoke SDD directly.
+- Omit the "Execution Handoff" section entirely. Regardless of which execution options that section lists in any Superpowers version (e.g. "Subagent-Driven" vs "Inline Execution"/"Parallel Session"), do NOT present execution options to the user — N1 always invokes SDD directly (see Step 5).
 
 After plan is created (the full plan body already lives in `.n1/memory/<ID>/plan.md` per the override above):
 - Update overview: `[x] Plan`, set `step: plan`
@@ -349,7 +350,7 @@ Proceed directly to implementation. Log: "Plan review passed — proceeding to i
 
 **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development to implement the plan task by task.
 
-**Before passing plan content:** If plan.md or the referenced plan file contains a `REQUIRED SUB-SKILL: Use superpowers:executing-plans` directive (legacy header from older Superpowers versions), IGNORE it. The authoritative execution skill is superpowers:subagent-driven-development as specified here.
+**Before passing plan content:** If plan.md contains ANY execution-skill directive in its header — whether it names `superpowers:executing-plans`, `superpowers:subagent-driven-development`, or both (the wording varies across Superpowers versions; SP 5.1 emits "subagent-driven-development (recommended) or executing-plans") — IGNORE it. The authoritative execution skill is always superpowers:subagent-driven-development as specified here.
 
 Resolve model for `developer`.
 
@@ -367,11 +368,11 @@ Pass to subagent-driven-development:
   - Commit each logical change separately (atomic commits)
   - If a change requires architectural decisions, report it as "needs escalation" instead of implementing
   - Do not refactor surrounding code — change only what the task describes
-- If config has a model override for developer, instruct: "Use model `<model>` for implementer subagents." (Note: this is best-effort — the orchestrator passes the instruction as text, but cannot structurally enforce the model parameter in SDD's subagent dispatch.)
+- If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) Note: this remains best-effort — the orchestrator passes the instruction as text and cannot structurally enforce the model parameter in SDD's subagent dispatch.
 
 **SDD overrides (IMPORTANT):**
-- Do NOT call `superpowers:finishing-a-development-branch` after tasks complete — N1 orchestrator handles the post-implementation pipeline (QA, Review, PR).
-- Do NOT use `superpowers:using-git-worktrees` — work on the current branch directly. N1 already created the working branch in Step 1 (see Working Branch), so SDD's commits land there, never on the default branch.
+- **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 9). STOP at the last completed task and hand control back to the N1 orchestrator.
+- **Workspace isolation is already satisfied** — N1 created the working branch in Step 1 (see Working Branch). Treat SDD's `superpowers:using-git-worktrees` prerequisite as ALREADY MET: do NOT create a new worktree or switch branches. Work on the current branch directly, so SDD's commits land there, never on the default branch.
 - Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
 - Run in CONTINUOUS mode: do NOT pause between tasks to ask for user approval or feedback. Execute all plan tasks sequentially without stopping. The only valid reasons to stop are: (1) a blocker you cannot resolve from context, (2) a decision that hits the "Low confidence + High blast radius" escalation threshold below, or (3) all tasks complete.
 
