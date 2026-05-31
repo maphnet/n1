@@ -126,3 +126,4 @@ Always escalate: security, architecture, public API changes.
 
 - Default branch: `main`
 - Commit style: imperative mood, English
+- **Working branch lifecycle:** `n1-start` creates the working branch eagerly in Step 1, the moment the `<ID>` is resolved (ticket ID, newly created ticket, or slug), via the idempotent "Ensure Working Branch" procedure. This guarantees implementation/QA/review commits never land on the default branch. `n1-pr` performs the single `git push -u origin <branch>` at PR time.

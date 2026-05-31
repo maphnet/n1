@@ -44,11 +44,47 @@ When spawning any agent, resolve its model:
 
 This allows per-project model overrides (e.g., using sonnet for developer in a cost-sensitive project).
 
+## Working Branch
+
+N1 owns the branch lifecycle. The working branch is created **eagerly, the moment the `<ID>` is resolved**, so no commit (from implementation, QA fixes, or review fixes) can ever reach the default branch. This procedure is called at each ID-resolution point (see Step 1 and Memory Check). It is **idempotent** — safe to call again on resume.
+
+**PROCEDURE: Ensure Working Branch (`<ID>`)**
+
+1. Compute the target branch name from `git.branchPattern` (config) + `<ID>`:
+   - `{prefix}-{id}` → e.g. `TRID-510`
+   - `{id}` → e.g. `510`
+   - `{slug}` or `feature/{slug}` → e.g. `feature/csv-export-users`
+
+   Sanitize for git ref validity: lowercase the slug, replace spaces and illegal characters with `-`, collapse repeats, trim leading/trailing `-`. Ticket IDs are already ref-safe; only slugs need sanitizing.
+
+2. Read current state:
+   ```bash
+   CURRENT=$(git branch --show-current)
+   DEFAULT=<git.defaultBranch from config>
+   ```
+
+3. Decide (smart reuse + safe create):
+   - **`CURRENT` == `TARGET`** → already on it. Reuse silently.
+   - **A local branch named `TARGET` already exists** → `git checkout <TARGET>`.
+   - **`CURRENT` == `DEFAULT`** → `git checkout -b <TARGET>` (any uncommitted changes carry over to the new branch — this is intended).
+   - **`CURRENT` is some OTHER branch** → STOP and ask:
+     ```
+     You're on branch '<CURRENT>', not the default ('<DEFAULT>').
+     1 — Create '<TARGET>' from here
+     2 — Switch to '<DEFAULT>' and branch '<TARGET>' from there
+     3 — Keep working on '<CURRENT>'
+     ```
+     Wait for the choice, then act accordingly.
+
+4. Report: "Working on branch `<TARGET>`."
+
+No `fetch`/`pull` is performed — the branch is created from the local default branch's current HEAD. The user owns keeping their local default up to date.
+
 ## Memory Check (Resume Support)
 
 Check if `.n1/memory/<input>/overview.md` exists:
 
-- **If exists:** Read the overview frontmatter to determine current step. Resume from where work left off. Read the dependency files for the current step (see dependency map below) and continue.
+- **If exists:** Read the overview frontmatter to determine current step. Run **Ensure Working Branch(`<ID>`)** (see Working Branch above) to re-check out the branch — this covers resuming from `main` or a different branch. Then resume from where work left off: read the dependency files for the current step (see dependency map below) and continue.
 - **If not exists:** Fresh start. Create `.n1/memory/<ID>/` directory.
 
 ### Step dependency map
@@ -80,6 +116,7 @@ Resolve model for `product-analyst` (see Model Resolution above).
 The product-analyst accepts three input modes. Choose based on input type:
 
 **Ticket mode** (input matches `<prefix>-<number>`):
+0. The `<ID>` is already known (the ticket ID). Run **Ensure Working Branch(`<ticketId>`)** (see Working Branch above) now, before spawning the analyst.
 1. Read `.n1/n1.config.json` → `tracker.mcp` and `tracker.operations`
 2. Spawn product-analyst with:
    - `mode`: "ticket"
@@ -123,13 +160,14 @@ The task has been structured. Would you like to create a tracker ticket?
      - `issueTypeName`: "Task"
      - `summary`: the Title from product-analyst output
      - `description`: the Core Ask + Description + Acceptance Criteria sections
-3. Use the returned ticket ID as the memory `<ID>` (replacing the slug)
+3. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
 4. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
 5. Report: "Created ticket **[<ID>](<ticket URL>)**: <title>"
 6. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
 
 **If 2 (No):**
 - Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
+- Now that the slug `<ID>` is known, run **Ensure Working Branch(`<slug>`)** (see Working Branch above)
 - Skip tracker status updates throughout the pipeline
 
 **For all modes:**
@@ -331,7 +369,7 @@ Pass to subagent-driven-development:
 
 **SDD overrides (IMPORTANT):**
 - Do NOT call `superpowers:finishing-a-development-branch` after tasks complete — N1 orchestrator handles the post-implementation pipeline (QA, Review, PR).
-- Do NOT use `superpowers:using-git-worktrees` — work on the current branch directly. N1 manages the branch lifecycle.
+- Do NOT use `superpowers:using-git-worktrees` — work on the current branch directly. N1 already created the working branch in Step 1 (see Working Branch), so SDD's commits land there, never on the default branch.
 - Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
 - Run in CONTINUOUS mode: do NOT pause between tasks to ask for user approval or feedback. Execute all plan tasks sequentially without stopping. The only valid reasons to stop are: (1) a blocker you cannot resolve from context, (2) a decision that hits the "Low confidence + High blast radius" escalation threshold below, or (3) all tasks complete.
 
