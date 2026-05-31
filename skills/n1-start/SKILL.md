@@ -234,8 +234,11 @@ Pass to brainstorming:
 - The content of `analysis.md` as **pre-researched codebase context** — tell brainstorming: "Here is a codebase analysis already performed by our solution architect — use this as your starting context instead of exploring from scratch."
 - **If ticket type is `bug`:** Also tell brainstorming: "This is a bug. The analysis includes a Bug Investigation section with the likely root cause and affected code path. Use these findings to ask informed questions about the fix approach rather than generic questions."
 
-After brainstorming completes:
-- Save the design output to `.n1/memory/<ID>/brainstorm.md`
+**Brainstorming overrides (IMPORTANT):**
+- **Spec location:** Write the design doc directly to `.n1/memory/<ID>/brainstorm.md` — NOT to `docs/superpowers/specs/`. The brainstorming skill honors "user preferences for spec location override this default," so this is the sanctioned location override. The skill's User Review Gate message will reference this path.
+- **Do NOT commit the spec.** `.n1/` is gitignored and ephemeral — N1 owns this content in per-ticket memory. No spec artifact may be committed to the target repo.
+
+After brainstorming completes (the design already lives in `.n1/memory/<ID>/brainstorm.md` per the override above):
 - Update overview: `[x] Brainstorm`, set `step: brainstorm`
 - Record key decisions in overview's `## Key Decisions` section
 
@@ -265,22 +268,14 @@ Pass to writing-plans:
 - Codebase context discovered during analysis
 
 **Writing-plans overrides (IMPORTANT):**
+- **Plan location:** Write the plan directly to `.n1/memory/<ID>/plan.md` — NOT to `docs/superpowers/plans/`. The writing-plans skill honors "user preferences for plan location override this default," so this is the sanctioned location override.
+- **Do NOT commit the plan.** `.n1/` is gitignored and ephemeral — N1 owns this content in per-ticket memory. No plan artifact may be committed to the target repo.
 - Do NOT include any `REQUIRED SUB-SKILL` execution directive in the plan document header. N1 controls execution mode — the plan should contain only implementation tasks, not instructions about which skill executes them.
 - Omit the "Execution Handoff" section entirely — do not offer the user a choice between SDD and parallel session. N1 will invoke SDD directly.
 
-After plan is created:
-- Save reference to `.n1/memory/<ID>/plan.md`:
-  ```markdown
-  ## Plan Reference
-  **File:** docs/plans/<date>-<feature>.md
-  
-  ## Summary
-  <2-3 sentence summary of the approach>
-  
-  ## Tasks
-  <list of task names from the plan>
-  ```
+After plan is created (the full plan body already lives in `.n1/memory/<ID>/plan.md` per the override above):
 - Update overview: `[x] Plan`, set `step: plan`
+- Record a 2-3 sentence summary of the approach in overview's `## Key Decisions` section
 
 ### 4b. PLAN REVIEW (Cross-Context Review)
 
@@ -293,7 +288,7 @@ Read `.n1/n1.config.json` → check `planReview.reviewPlan` (default: `true`).
 **Spawn agent:** solution-architect (fresh context — CCR)
 
 Resolve model for `solution-architect`. Spawn with:
-- Content of `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` (including the referenced `docs/plans/<file>.md`)
+- Content of `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` (the full plan body)
 - Codebase access (Read, Grep, Glob)
 - Review-oriented instructions (NOT generative — this is a review, not a second plan):
 
@@ -340,7 +335,7 @@ Read `.n1/n1.config.json` → check `planReview.requirePlanApproval` (default: `
 **If `planReview.requirePlanApproval` is `true`:**
 
 Present the plan to the user for approval:
-"Plan is ready at `docs/plans/<file>`. Please review and approve before I proceed with implementation."
+"Plan is ready at `.n1/memory/<ID>/plan.md`. Please review and approve before I proceed with implementation."
 
 **Wait for explicit approval before continuing.**
 
