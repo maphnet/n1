@@ -91,9 +91,19 @@ The verification agent MUST for each finding:
 3. **Determine verdict:** CONFIRMED (real issue) or FALSE POSITIVE (with reason)
 4. **Re-assess priority** — a finding may shift priority after deeper analysis
 
-The verification agent returns findings in two groups:
-- **Confirmed findings** — real issues, with updated priority if changed
-- **Dismissed findings** — false positives, with explanation of why each was ruled out
+The verification agent returns findings in two groups, using this explicit schema (a verdict-per-finding table, NOT the code-reviewer's default finding schema):
+
+```markdown
+## Verification Result
+
+### Confirmed
+| # | Orig priority | Re-assessed priority | Finding | File:line | Evidence (what you read that confirms it) |
+|---|---------------|----------------------|---------|-----------|-------------------------------------------|
+
+### Dismissed (false positives)
+| # | Finding | File:line | Why ruled out (framework guarantee / caller check / test coverage / misread) |
+|---|---------|-----------|------------------------------------------------------------------------------|
+```
 
 ### Phase 4: Route by Severity
 

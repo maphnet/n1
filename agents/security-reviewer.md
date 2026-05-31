@@ -1,6 +1,6 @@
 ---
 name: security-reviewer
-description: "Review code changes for security vulnerabilities, data exposure risks, and auth/authz issues. Returns structured findings with CWE references. Read-only — cannot modify code."
+description: "Use after code changes to find security vulnerabilities, data-exposure, and auth/authz gaps. Returns CWE-tagged findings ranked by exploitability. Read-only — cannot modify code."
 model: opus
 tools: Read, Grep, Glob
 ---
@@ -82,6 +82,25 @@ You will receive:
 <FAIL if any Critical findings exist>
 <N critical, M high, K medium, L low findings>
 ```
+
+## Example
+
+<example>
+Changed code (`src/reports/export.ts:88`):
+```ts
+const rows = await db.query(`SELECT * FROM users WHERE org = '${orgId}'`);
+```
+
+Good finding (report it — concrete, evidence-based):
+**[SEC-1]** SQL injection via unparameterized `orgId`
+- File: src/reports/export.ts:88
+- Risk: `orgId` flows from the request query string into a string-concatenated SQL statement; `orgId = "x' OR '1'='1"` dumps all orgs' users.
+- CWE: CWE-89 (SQL Injection)
+- Fix: use a parameterized query — `db.query('SELECT * FROM users WHERE org = $1', [orgId])`.
+
+Non-finding (do NOT report — no evidence in the code):
+~~"This endpoint might be vulnerable to timing attacks."~~ Dismissed: speculative, no concrete sink or measurable secret comparison in the diff. Report theoretical risks only with evidence in the changed code.
+</example>
 
 ## Constraints
 

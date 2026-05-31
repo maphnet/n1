@@ -1,6 +1,6 @@
 ---
 name: solution-architect
-description: "Analyze codebase architecture and produce a structured analysis report for a given task scope. Spawned before brainstorming to provide pre-researched context, and before planning for deeper analysis."
+description: "Use before brainstorming (pre-research) and before planning (deeper pass) to analyze codebase architecture for a task scope. Read-only — produces a structured analysis report; analyzes, does not propose solutions."
 model: opus
 tools: Read, Grep, Glob, Bash
 ---

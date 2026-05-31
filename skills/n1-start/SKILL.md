@@ -95,6 +95,7 @@ Check if `.n1/memory/<input>/overview.md` exists:
 | analysis | `ticket.md` | `analysis.md` |
 | brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
 | plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
+| plan-review | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` | `plan.md` (in-place fixes) |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
@@ -337,7 +338,7 @@ Output format:
 
 After the agent returns:
 - If verdict is FIXED: the plan file was updated in-place by the reviewer
-- Log the review result (verdict + changes) to the orchestrator context for traceability
+- Record the plan-review verdict and a one-line summary of changes in overview's `## Key Decisions` — durable traceability that survives a resume, rather than living only in transient orchestrator context
 
 ### Plan Checkpoint (conditional)
 
@@ -369,16 +370,15 @@ Resolve model for `developer`.
 Pass to subagent-driven-development:
 - The implementation plan from `plan.md` (or brainstorm.md for simple tasks), with success criteria appended to each task
 - Codebase context
-- Developer persona constraints (include these as additional role guidance for each implementer subagent):
-  - **Think before coding:** state assumptions explicitly; if uncertain, stop and report rather than guessing
-  - **Simplicity first:** write the minimum code that solves the task — no speculative abstractions, no features beyond what was asked
-  - **Surgical changes:** touch only what the task requires — don't "improve" adjacent code, comments, or formatting
-  - Follow existing patterns — do not introduce new architectural patterns or dependencies
-  - Every change must have a corresponding test (or verify existing tests cover it)
-  - Commit each logical change separately (atomic commits)
-  - If a change requires architectural decisions, report it as "needs escalation" instead of implementing
-  - Do not refactor surrounding code — change only what the task describes
-- If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) Note: this remains best-effort — the orchestrator passes the instruction as text and cannot structurally enforce the model parameter in SDD's subagent dispatch.
+- **Developer persona constraints** — SDD's implementer subagents do NOT load `agents/developer.md`, so pass these as role guidance. They MIRROR the canonical persona in `agents/developer.md` (the single source of truth); keep the two in sync:
+  - **Think Before Coding** — state assumptions explicitly; if uncertain, stop and report rather than guessing.
+  - **Simplicity First** — write the minimum code that solves the task; no speculative abstractions, no features beyond what was asked.
+  - **Surgical Changes** — touch only what the task requires; don't "improve" adjacent code, comments, or formatting.
+  - **Goal-Driven Execution** — define verifiable success criteria first, then loop until they are met (see "Define success criteria" above).
+  - Follow existing patterns; introduce no new architectural patterns or dependencies.
+  - Every change has a corresponding test (or verify existing tests cover it); commit each logical change separately (atomic commits).
+  - If a change requires architectural decisions, report it as "needs escalation" instead of implementing; do not refactor surrounding code.
+- If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) For a structural binding rather than a text instruction, set the `CLAUDE_CODE_SUBAGENT_MODEL` environment variable to `<model>` around the SDD dispatch — it is the documented highest-precedence override for subagent model selection and binds even when SDD spawns its own subagents. Fall back to the text instruction only if the env var cannot be set.
 
 **SDD overrides (IMPORTANT):**
 - **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 9). STOP at the last completed task and hand control back to the N1 orchestrator.
@@ -441,6 +441,7 @@ Spawn the qa-engineer agent with:
 - Content of `ticket.md` (acceptance criteria)
 - Content of `implementation.md` (what was built, files changed)
 - Content of `plan.md` or `brainstorm.md` (scope context)
+- The `## Key Decisions` and `## Escalations` slices of `overview.md` (NOT the whole file) — so QA knows which choices were deliberate and why, instead of re-litigating them
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/qa.md`
@@ -457,12 +458,10 @@ After the agent returns:
 
 Resolve models for both agents.
 
-Prepare shared review context:
-- Content of `ticket.md`
-- Content of `brainstorm.md`
-- Content of `implementation.md`
-- Content of `qa.md`
-- Default branch name from config
+Prepare review context (curated per reviewer, not one identical bundle):
+- **Shared:** `ticket.md`, `implementation.md`, `qa.md`, default branch name, and the `## Key Decisions` + `## Escalations` slices of `overview.md` — so neither reviewer flags a deliberate, recorded choice as a defect.
+- **code-reviewer also receives** `brainstorm.md` — design intent matters for a design-quality review.
+- **security-reviewer does NOT receive** `brainstorm.md` — the design narrative is low-signal for vulnerability scanning. Keep its context lean: acceptance criteria + changed-file list + the diff are its high-signal inputs.
 
 Spawn BOTH agents simultaneously:
 - **code-reviewer** with the shared review context
@@ -558,3 +557,8 @@ This orchestrator is a **lightweight controller**. It:
 - Loads only the dependency files needed for the current step
 - Writes output to memory files after each step (explicit handoff)
 - Never accumulates full history in its own context
+
+### Memory hygiene
+
+- **Soft size budget per memory file.** If a file grows large (a long bug investigation in `analysis.md`, a multi-cycle `review.md`), compact it to its high-signal conclusions before the next step reads it — verbose, stale notes are the raw material of context poisoning on long or resumed runs.
+- **Re-derive volatile facts on resume.** Treat files-changed lists and test results stored in memory as hints, not ground truth: on resume, re-derive them from `git` and the test suite rather than trusting potentially stale markdown.

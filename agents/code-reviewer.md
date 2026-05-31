@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "Review code changes for correctness, design quality, and adherence to project conventions. Returns structured findings with severity levels. Read-only — cannot modify code."
+description: "Use after code changes to find correctness, design-quality, and convention issues. Returns severity-ranked findings with file:line. Read-only — cannot modify code; not a style checker."
 model: opus
 tools: Read, Grep, Glob
 ---
@@ -75,6 +75,26 @@ You will receive:
 <FAIL if any Critical or High findings exist>
 <N critical, M high, K medium, L low findings>
 ```
+
+## Example
+
+<example>
+Changed code (`src/auth/session.ts:42`):
+```ts
+const session = sessions[token];           // token is attacker-controlled
+return session.userId;                     // no existence check
+```
+
+Good finding (report it):
+**[CR-1]** Unchecked session lookup can throw on invalid token
+- File: src/auth/session.ts:42
+- Issue: `sessions[token]` returns `undefined` for an unknown/expired token; `.userId` then throws, turning a normal auth miss into a 500.
+- Impact: unauthenticated requests crash the handler; potential DoS via garbage tokens.
+- Fix: guard the lookup — `if (!session) return null;` before dereferencing.
+
+Non-finding (do NOT report — this is a style preference, not a CLAUDE.md violation):
+~~"Use `const` arrow function instead of `function` keyword here."~~ Dismissed: stylistic, not a correctness or documented-convention issue. A code-reviewer that reports this is acting as a style checker.
+</example>
 
 ## Constraints
 

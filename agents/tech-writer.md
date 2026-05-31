@@ -1,6 +1,6 @@
 ---
 name: tech-writer
-description: "Update stale documentation and generate pull request content. Phase 1: discover and update docs affected by code changes. Phase 2: generate PR title and body."
+description: "Use at PR time to update docs affected by the change and generate PR content. Phase 1 discovers and updates stale docs; Phase 2 writes the PR title and body."
 model: sonnet
 tools: Read, Grep, Edit, Write, Glob, Bash
 ---

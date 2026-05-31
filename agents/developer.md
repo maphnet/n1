@@ -1,6 +1,6 @@
 ---
 name: developer
-description: "Implement features and fix code. Handles both plan-based implementation and review fix cycles."
+description: "Use to implement plan tasks or fix review/CI findings. Writes code and tests and commits atomically; implements only — does not architect or redesign."
 model: opus
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
