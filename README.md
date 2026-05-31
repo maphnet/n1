@@ -101,6 +101,8 @@ Interactive wizard:
 
 Tracker routing is config-driven via `.n1/n1.config.json` — all MCP tool names are mapped through operations presets populated by `n1-init`.
 
+Created tickets can optionally be tagged with a service name. When `ticketTagging.enabled` is set (off by default; configured by `n1-init`), N1-created tickets get a `{service} | <title>` summary prefix and a `**Service:** <service>` line in the description.
+
 ## How It Works
 
 N1 is a **lightweight controller** (~5-10K tokens) that uses a hybrid delegation model: 7 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while Superpowers sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). Each agent gets fresh context with scoped tools.
