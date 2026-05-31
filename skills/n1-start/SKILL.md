@@ -103,6 +103,8 @@ Check if `.n1/memory/<input>/overview.md` exists:
 
 Each step reads ONLY the files listed in its dependency column, not the full history.
 
+**Dependency integrity guard (applies to every step).** Before spawning a step's agent or sub-skill, verify each of that step's declared dependency files exists and is non-empty. If any is missing or empty — a realistic state when resuming from an arbitrary step — **STOP and report which file is missing rather than proceeding** with a degraded handoff. Do not let an agent improvise around an absent `implementation.md` or an empty `analysis.md`. (`ticket.md` with no acceptance criteria is handled upstream by product-analyst and is not a hard stop.)
+
 ## Pipeline Steps
 
 Steps 3 (Brainstorm) and 4 (Plan checkpoint) are **INTERACTIVE** — Superpowers handles user interaction during brainstorming, and the orchestrator pauses for explicit plan approval. All other steps run autonomously.
@@ -471,7 +473,7 @@ If either reviewer returned FAIL verdict:
 Resolve model for `developer`.
 
 Pass to developer:
-- Combined review findings (Critical + Important only)
+- Combined review findings (Critical + High only)
 - List of affected files
 
 After developer returns:
