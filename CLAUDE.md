@@ -46,7 +46,7 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 
 - **Skill authoring:** Always use `/writing-skills` skill when creating or modifying skills
 - Skills: `skills/<name>/SKILL.md` — auto-discovered, invoked as `/n1:<skill-name>`
-- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` (comma-separated list of allowed tools, advisory for LLM scoping — not structurally enforced by Claude Code)
+- Agents: `agents/<name>.md` — frontmatter requires `name`, `description`, `model`; optional `tools` (comma-separated allowlist of tool identifiers). Agents are dispatched as file-based subagents (by name), so Claude Code **enforces** this allowlist at runtime — it is a real capability boundary, not advisory. MCP tools must be named `mcp__<server>__<tool>`; a human label like "Tracker MCP" grants nothing. Omit `tools` entirely to inherit the orchestrator's full tool set — required when an agent needs config-dynamic tracker MCP tools whose names vary by tracker (e.g. product-analyst)
 - Hooks: `hooks/hooks.json` — event declarations, scripts in `hooks/`
 - One concern per file
 - Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives
@@ -104,7 +104,7 @@ When `ticketTagging.enabled` is true, `n1-start` prefixes created tickets with `
 
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
-| product-analyst | sonnet | Read, Tracker MCP | Ticket read |
+| product-analyst | sonnet | inherits (needs dynamic tracker MCP) | Ticket read |
 | solution-architect | opus | Read, Grep, Glob, Bash | Analysis, Bug investigation, Plan review (CCR) |
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
