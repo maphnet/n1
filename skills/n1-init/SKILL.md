@@ -145,13 +145,16 @@ Set config:
     "mcp": "plugin_atlassian_atlassian",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
+    "assignToCreator": true,
     "operations": {
       "readTicket": "getJiraIssue",
       "getTransitions": "getTransitionsForJiraIssue",
       "moveStatus": "transitionJiraIssue",
       "addComment": "addCommentToJiraIssue",
       "search": "searchJiraIssuesUsingJql",
-      "createIssue": "createJiraIssue"
+      "createIssue": "createJiraIssue",
+      "getCurrentUser": "atlassianUserInfo",
+      "assign": "editJiraIssue"
     },
     "statuses": {
       "todo": "<detected or manual>",
@@ -203,13 +206,16 @@ Set config:
     "mcp": "youtrack",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
+    "assignToCreator": true,
     "operations": {
       "readTicket": "get_issue",
       "getComments": "get_issue_comments",
       "moveStatus": "update_issue",
       "addComment": "add_issue_comment",
       "search": "search_issues",
-      "createIssue": "create_issue"
+      "createIssue": "create_issue",
+      "getCurrentUser": "get_current_user",
+      "assign": "change_issue_assignee"
     },
     "statuses": {
       "todo": "<detected or manual>",
@@ -307,6 +313,36 @@ Current ticket tagging:
 - **1** → leave unchanged.
 - **2** → run the derive+confirm flow above, set `enabled: true`.
 - **3** → set `{ "enabled": false }`.
+
+## Assign to Creator Configuration
+
+Ask whether N1 should auto-assign tickets it creates to the user running it. **Default is Yes.**
+
+```
+Auto-assign tickets N1 creates to you? 1 — Yes (default) / 2 — No
+```
+
+- **1 (Yes) or default:**
+```json
+{ "tracker": { "assignToCreator": true } }
+```
+- **2 (No):**
+```json
+{ "tracker": { "assignToCreator": false } }
+```
+
+Store the value on the `tracker` block (alongside `mcp`/`operations`). Skip this question entirely when `tracker.mcp` is `null` (no tracker configured).
+
+### On reconfiguration (n1-init re-run):
+
+If `assignToCreator` already exists on the `tracker` block, show it and offer:
+```
+Auto-assign created tickets to you: <true/false>
+1 — Keep current
+2 — Toggle
+```
+- **1** → leave unchanged.
+- **2** → flip the boolean.
 
 ## Review Configuration
 

@@ -177,8 +177,17 @@ The task has been structured. Would you like to create a tracker ticket?
      - `description`: `<description>`
 4. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
 5. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
-6. Report: "Created ticket **[<ID>](<ticket URL>)**: <title>"
-7. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
+6. **Assign to creator.** Run this step ONLY if ALL of: `tracker.assignToCreator !== false`, `tracker.operations.getCurrentUser` exists, AND `tracker.operations.assign` exists. If any condition fails, skip this step silently (no message) and go to step 7.
+   1. Resolve the current user: call `mcp__<tracker.mcp>__<tracker.operations.getCurrentUser>` (no arguments).
+      - **YouTrack:** take `login` from the response.
+      - **Jira:** take the account id (`account_id`) from the response; reuse the `cloudId` already resolved during creation.
+   2. Assign the ticket: call `mcp__<tracker.mcp>__<tracker.operations.assign>`:
+      - **YouTrack:** `change_issue_assignee` with `issueId`: `<ID>`, `assigneeLogin`: `<login>`.
+      - **Jira:** `editJiraIssue` with `cloudId`: resolved cloud ID, `issueIdOrKey`: `<ID>`, `assignee_account_id`: `<account id>`.
+   3. **On success:** set the report suffix to ` (assigned to you)`.
+   4. **On failure** (either call errors — permission, unresolvable user, MCP error): do NOT roll back creation. Emit `⚠ Ticket created but could not auto-assign (<reason>); assign it manually.` and use an empty report suffix.
+7. Report: "Created ticket **[<ID>](<ticket URL>)**<report suffix>: <title>"
+8. After writing ticket.md and overview.md, update tracker status to In Progress (same as ticket mode — call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`)
 
 **If 2 (No):**
 - Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
