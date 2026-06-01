@@ -168,6 +168,9 @@ The task has been structured. Would you like to create a tracker ticket?
 ```
 
 **If 1 (Yes):**
+
+> ⚠ **Create the ticket now.** Creating the ticket via MCP is **mandatory and immediate** — it is the first action after the user answers "Yes". Do NOT proceed as if the run were ticket-less; the slug is adopted as `<ID>` ONLY on the explicit "No" path. (See the ID-Final invariant above.)
+
 1. Extract the Title and structured content from the product-analyst output
 2. **Resolve ticket tagging.** Read `ticketTagging` from `.n1/n1.config.json`.
    - **If `ticketTagging.enabled` is `true` AND `ticketTagging.service` is a non-empty string** → tagging is ON:
@@ -187,7 +190,10 @@ The task has been structured. Would you like to create a tracker ticket?
      - `issueTypeName`: "Task"
      - `summary`: `<summary>`
      - `description`: `<description>`
-4. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
+4. The returned ticket ID is the final `<ID>`. Adopt it deterministically:
+   1. Compute the provisional `<slug>` exactly as the "No" path would (description slug for brain dump, filename slug for file mode).
+   2. Run **Reconcile Memory ID & Branch(`<slug>`, `<ticketID>`)** (see Working Branch above) — a no-op in the clean path; it moves any leaked slug memory folder into the ticket-ID folder and renames the slug branch if drift occurred.
+   3. Set `<ID>` = `<ticketID>`, then run **Ensure Working Branch(`<ticketID>`)** (see Working Branch above).
 5. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
 6. **Assign to creator.** Run this step ONLY if ALL of: `tracker.assignToCreator !== false`, `tracker.operations.getCurrentUser` exists, AND `tracker.operations.assign` exists. If any condition fails, skip this step silently (no message) and go to step 7.
    1. Resolve the current user: call `mcp__<tracker.mcp>__<tracker.operations.getCurrentUser>` (no arguments).
