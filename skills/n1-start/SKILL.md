@@ -154,6 +154,8 @@ The product-analyst accepts three input modes. Choose based on input type:
    - `mode`: "text"
    - `content`: the raw input text
 
+**ID-Final invariant.** No file may be written under `.n1/memory/` and no working branch may be created until `<ID>` is **final**: the ticket ID in ticket mode; the *created* ticket ID for brain-dump/file mode answered "Yes"; the slug only for brain-dump/file mode answered "No". Resolving the create-ticket decision (and, on "Yes", actually creating the ticket) therefore happens BEFORE the `ticket.md`/`overview.md` writes and branch creation below.
+
 **Tracker ticket creation (brain dump and file modes):**
 
 After product-analyst returns, if the input was a brain dump or file path, AND a tracker is configured (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
