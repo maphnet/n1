@@ -80,6 +80,16 @@ N1 owns the branch lifecycle. The working branch is created **eagerly, the momen
 
 No `fetch`/`pull` is performed — the branch is created from the local default branch's current HEAD. The user owns keeping their local default up to date.
 
+**PROCEDURE: Reconcile Memory ID & Branch (`<oldId>`, `<newId>`)**
+
+Heals state that leaked under a provisional slug before the final `<ID>` was known (e.g. if the orchestrator drifted into the ticket-less path after a "Yes"). **Idempotent** — safe to call when nothing leaked. `<oldId>` is the deterministically-computed provisional slug; `<newId>` is the final ID.
+
+1. **If `<oldId>` == `<newId>`** → return (no-op).
+2. **Memory move:** if `.n1/memory/<oldId>/` exists AND `.n1/memory/<newId>/` does NOT → filesystem-move the directory `<oldId>/` → `<newId>/` (`.n1/` is gitignored, so a plain `mv` / `Move-Item`, NOT `git mv`). If `.n1/memory/<newId>/` already exists, skip the move and report — the `<newId>` memory is authoritative (resume/collision guard).
+3. **Frontmatter fix:** if `.n1/memory/<newId>/overview.md` exists (true only when an overview was already written under the slug and just moved — in the clean path it does not exist yet), rewrite its `ticket: <oldId>` → `ticket: <newId>` and its `# <oldId>: <Title>` heading → `# <newId>: <Title>`.
+4. **Branch rename:** compute `<oldBranch>` and `<newBranch>` from `git.branchPattern` (config). If a local branch `<oldBranch>` exists AND `<newBranch>` does NOT → `git branch -m <oldBranch> <newBranch>` (rename preserves commits; N1 has not pushed yet — push happens at PR time in `n1-pr`). If `<newBranch>` already exists, skip the rename — the subsequent Ensure Working Branch will check it out.
+5. Report: "Migrated memory + branch `<oldId>` → `<newId>`."
+
 ## Memory Check (Resume Support)
 
 Check if `.n1/memory/<input>/overview.md` exists:
@@ -144,6 +154,8 @@ The product-analyst accepts three input modes. Choose based on input type:
    - `mode`: "text"
    - `content`: the raw input text
 
+**ID-Final invariant.** No file may be written under `.n1/memory/` and no working branch may be created until `<ID>` is **final**: the ticket ID in ticket mode; the *created* ticket ID for brain-dump/file mode answered "Yes"; the slug only for brain-dump/file mode answered "No". Resolving the create-ticket decision (and, on "Yes", actually creating the ticket) therefore happens BEFORE the `ticket.md`/`overview.md` writes and branch creation below.
+
 **Tracker ticket creation (brain dump and file modes):**
 
 After product-analyst returns, if the input was a brain dump or file path, AND a tracker is configured (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
@@ -156,6 +168,9 @@ The task has been structured. Would you like to create a tracker ticket?
 ```
 
 **If 1 (Yes):**
+
+> ⚠ **Create the ticket now.** Creating the ticket via MCP is **mandatory and immediate** — it is the first action after the user answers "Yes". Do NOT proceed as if the run were ticket-less; the slug is adopted as `<ID>` ONLY on the explicit "No" path. (See the ID-Final invariant above.)
+
 1. Extract the Title and structured content from the product-analyst output
 2. **Resolve ticket tagging.** Read `ticketTagging` from `.n1/n1.config.json`.
    - **If `ticketTagging.enabled` is `true` AND `ticketTagging.service` is a non-empty string** → tagging is ON:
@@ -175,7 +190,10 @@ The task has been structured. Would you like to create a tracker ticket?
      - `issueTypeName`: "Task"
      - `summary`: `<summary>`
      - `description`: `<description>`
-4. Use the returned ticket ID as the memory `<ID>` (replacing the slug). Now that the final `<ID>` is known, run **Ensure Working Branch(`<new ticket ID>`)** (see Working Branch above).
+4. The returned ticket ID is the final `<ID>`. Adopt it deterministically:
+   1. Compute the provisional `<slug>` exactly as the "No" path would (description slug for brain dump, filename slug for file mode).
+   2. Run **Reconcile Memory ID & Branch(`<slug>`, `<ticketID>`)** (see Working Branch above) — a no-op in the clean path; it moves any leaked slug memory folder into the ticket-ID folder and renames the slug branch if drift occurred.
+   3. Set `<ID>` = `<ticketID>`, then run **Ensure Working Branch(`<ticketID>`)** (see Working Branch above).
 5. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
 6. **Assign to creator.** Run this step ONLY if ALL of: `tracker.assignToCreator !== false`, `tracker.operations.getCurrentUser` exists, AND `tracker.operations.assign` exists. If any condition fails, skip this step silently (no message) and go to step 7.
    1. Resolve the current user: call `mcp__<tracker.mcp>__<tracker.operations.getCurrentUser>` (no arguments).
