@@ -80,6 +80,16 @@ N1 owns the branch lifecycle. The working branch is created **eagerly, the momen
 
 No `fetch`/`pull` is performed — the branch is created from the local default branch's current HEAD. The user owns keeping their local default up to date.
 
+**PROCEDURE: Reconcile Memory ID & Branch (`<oldId>`, `<newId>`)**
+
+Heals state that leaked under a provisional slug before the final `<ID>` was known (e.g. if the orchestrator drifted into the ticket-less path after a "Yes"). **Idempotent** — safe to call when nothing leaked. `<oldId>` is the deterministically-computed provisional slug; `<newId>` is the final ID.
+
+1. **If `<oldId>` == `<newId>`** → return (no-op).
+2. **Memory move:** if `.n1/memory/<oldId>/` exists AND `.n1/memory/<newId>/` does NOT → filesystem-move the directory `<oldId>/` → `<newId>/` (`.n1/` is gitignored, so a plain `mv` / `Move-Item`, NOT `git mv`). If `.n1/memory/<newId>/` already exists, skip the move and report — the `<newId>` memory is authoritative (resume/collision guard).
+3. **Frontmatter fix:** if `.n1/memory/<newId>/overview.md` exists (true only when an overview was already written under the slug and just moved — in the clean path it does not exist yet), rewrite its `ticket: <oldId>` → `ticket: <newId>` and its `# <oldId>: <Title>` heading → `# <newId>: <Title>`.
+4. **Branch rename:** compute `<oldBranch>` and `<newBranch>` from `git.branchPattern` (config). If a local branch `<oldBranch>` exists AND `<newBranch>` does NOT → `git branch -m <oldBranch> <newBranch>` (rename preserves commits; N1 has not pushed yet — push happens at PR time in `n1-pr`). If `<newBranch>` already exists, skip the rename — the subsequent Ensure Working Branch will check it out.
+5. Report: "Migrated memory + branch `<oldId>` → `<newId>`."
+
 ## Memory Check (Resume Support)
 
 Check if `.n1/memory/<input>/overview.md` exists:
