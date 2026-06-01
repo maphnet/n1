@@ -100,6 +100,8 @@ When `ticketTagging.enabled` is true, `n1-start` prefixes created tickets with `
 
 When `tracker.assignToCreator` is not `false` (default ON), `n1-start` assigns tickets it creates to the currently-authenticated tracker user via the `getCurrentUser` + `assign` operations. Creation only; non-fatal on failure; silently skipped when those operations are absent (legacy configs). Configured by `n1-init`.
 
+On brain-dump/file runs where the user opts to create a ticket, `n1-start` adopts the **created ticket ID** as the per-ticket memory `<ID>` and branch name. An ID-Final invariant blocks any memory/branch write until that ID is known; if state was already written under the provisional slug, the idempotent `Reconcile Memory ID & Branch` procedure moves the memory folder and renames the branch (`git branch -m`) to the ticket-ID-based names.
+
 ### Agent Personas
 
 8 atomic agents with scoped tools and configurable models:
