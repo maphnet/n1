@@ -109,8 +109,8 @@ On brain-dump/file runs where the user opts to create a ticket, `n1-start` adopt
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
 | product-analyst | sonnet | inherits (needs dynamic tracker MCP) | Ticket read |
-| solution-architect | opus | Read, Grep, Glob, Bash | Analysis, Bug investigation, Plan review (CCR) |
-| planner | opus | Read, Grep, Glob, Write, Edit, Skill | Plan writing |
+| solution-architect | opus | Read, Grep, Glob, Bash, WebSearch, WebFetch | Analysis, Bug investigation, Plan review (CCR) |
+| planner | opus | Read, Grep, Glob, Write, Edit, Skill, WebSearch, WebFetch | Plan writing |
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
@@ -118,6 +118,8 @@ On brain-dump/file runs where the user opts to create a ticket, `n1-start` adopt
 | tech-writer | sonnet | Read, Grep, Edit, Write, Glob | Doc update, PR content |
 
 Models default to agent frontmatter values, overridable via `models` section in `n1.config.json`.
+
+**Trusted web research (always on).** `solution-architect` and `planner` carry `WebSearch, WebFetch` to research industry standards and best practices during analysis, planning, and plan-review. Research is constrained by the shared rubric in `agents/research-standards.md`: trusted source tiers, a marketing reject-list, ≥2-source corroboration, mandatory URL citation, a standards-over-soft-practices fitness gate (guards against over-engineering), and graceful degradation when the network is unavailable. Library API docs still go through Context7, not web search.
 
 ### Session Start Hook
 
