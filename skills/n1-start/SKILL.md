@@ -256,6 +256,7 @@ Resolve model for `solution-architect`.
 Spawn the solution-architect agent with:
 - Content of `ticket.md` as the scope to analyze
 - The **Type** field extracted from `ticket.md` (bug/feature/task/improvement) — pass it explicitly so the architect knows whether to perform bug investigation
+- Directive: "Research relevant industry standards/best practices per agents/research-standards.md and include the cited Industry Standards & Best Practices section."
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/analysis.md`
@@ -296,7 +297,7 @@ State your reasoning: "This task is [simple/complex] because [reason]. [Skipping
 
 Before calling superpowers:writing-plans, spawn solution-architect again with:
 - Content of `ticket.md` and `brainstorm.md`
-- Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning."
+- Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning. Also research applicable industry standards/best practices per agents/research-standards.md and cite them."
 
 Write output to `.n1/memory/<ID>/analysis.md` (overwrite with enriched version).
 
@@ -353,6 +354,14 @@ Your job is to find specific issues in these categories:
 5. BLAST RADIUS — Does the plan touch more files or systems than necessary? Could
    the same result be achieved with fewer changes?
 
+6. STANDARDS VALIDATION — Does the plan align with established industry standards
+   and best practices for this domain? Research per agents/research-standards.md:
+   corroborate across ≥2 independent trusted sources and cite the URL for any
+   deviation you flag. Apply the fitness gate — prefer decisive standards over
+   contestable practices, and do not flag a "best practice" the plan correctly
+   omitted as over-engineering for this scope. If web tools are unavailable, skip
+   this check and note it.
+
 If you find issues: fix them in-place in the plan file. State what you changed and why.
 If the plan is clean: state "Plan validated, no issues found."
 
@@ -361,6 +370,7 @@ Output format:
 **Verdict:** CLEAN | FIXED
 **Changes:** (list of fixes applied, or "None")
 **Verified assumptions:** (list of codebase claims you confirmed via Grep/Read)
+**Verified standards:** (list of best-practice/standard claims confirmed via web, with cited URLs; or "None")
 ```
 
 After the agent returns:
