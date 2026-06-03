@@ -2,6 +2,7 @@
 name: n1-review
 description: "Code review with fix loop. No args = review current branch (fix cycle). With PR number = advisory review (report only)."
 argument-hint: "[PR#]"
+model: inherit
 ---
 
 # N1 Code Review

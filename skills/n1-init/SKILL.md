@@ -1,6 +1,7 @@
 ---
 name: n1-init
 description: "Set up N1 for a project. Creates .n1/ directory, n1.config.json, and enriches CLAUDE.md with project conventions."
+model: sonnet
 ---
 
 # N1 Project Setup

@@ -1,6 +1,7 @@
 ---
 name: n1-pr
 description: "Create a pull request. Collects diff, generates PR description via tech-writer agent, pushes, creates PR, and updates tracker."
+model: inherit
 ---
 
 # N1 Pull Request Creation

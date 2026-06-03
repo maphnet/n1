@@ -2,6 +2,7 @@
 name: n1-ci
 description: "Monitor CI checks after PR creation. Auto-fixes failures via developer agent, escalates to user after max attempts. Usage: /n1:n1-ci or /n1:n1-ci #123"
 argument-hint: "[PR#]"
+model: inherit
 ---
 
 # N1 CI Watch & Fix

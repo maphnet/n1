@@ -2,6 +2,7 @@
 name: n1-start
 description: "Core orchestrator. Start working on a task: /n1:n1-start TRID-510 or /n1:n1-start need CSV export for users. Handles the full cycle: ticket → analysis → brainstorm → plan → implement → QA → review → PR."
 argument-hint: "<ticket-id or brain dump>"
+model: inherit
 ---
 
 # N1 Core Orchestrator
