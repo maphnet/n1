@@ -222,7 +222,6 @@ The task has been structured. Would you like to create a tracker ticket?
 ---
 ticket: <ID>
 step: ticket
-last_updated: <ISO timestamp>
 qa_fix_cycle: 0
 review_fix_cycle: 0
 clean_passes: 0

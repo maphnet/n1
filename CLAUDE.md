@@ -51,6 +51,7 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 - One concern per file
 - Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives
 - No Co-Authored-By trailers in commits
+- **Timestamps:** Never let the model invent a timestamp — it has no clock and will hallucinate (e.g. drifting `+1h` on each rewrite). Date-only needs (spec/plan filenames `YYYY-MM-DD`) use the harness-injected `currentDate`. Precise time (time-of-day, durations) must come from the `date` command, e.g. `date -u +%Y-%m-%dT%H:%M:%SZ`. Don't add timestamp fields unless something actually reads them — file mtime already records "last modified".
 
 ## Architecture
 
