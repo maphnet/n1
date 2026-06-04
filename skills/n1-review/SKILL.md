@@ -121,6 +121,7 @@ Resolve model for `developer`.
 Pass to developer:
 - Confirmed findings (Critical + High only)
 - List of affected files
+- Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one answering a current question rather than verifying committed code) under `.n1/scratch/benchmarks/` or `.n1/scratch/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Fixes that need real regression coverage still get committed tests in the repo as usual. When unsure, default to scratch.
 
 After developer fixes are applied, go back to **Phase 2** (full re-review: find → verify → report).
 
