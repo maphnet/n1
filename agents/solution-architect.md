@@ -84,3 +84,4 @@ You will receive:
 - Keep under 1000 words
 - Do not propose solutions or designs — analyze what exists and identify patterns to follow
 - If no similar features exist, say so explicitly rather than forcing a comparison
+- **Scratch vs. committed test artifacts.** A test or benchmark written only to answer a question you have *right now* — a micro-benchmark comparing approaches, a repro script, a viability spike — is throwaway. Write it under the scratch directory the orchestrator gives you (under `.n1/`, gitignored), never into the repo's test suite. Only tests that verify the committed implementation and should run in CI forever (unit, integration, e2e tied to acceptance criteria) belong in the repo. When unsure, default to scratch.
