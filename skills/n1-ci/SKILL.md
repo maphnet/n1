@@ -170,6 +170,7 @@ Pass to developer:
 - Current git diff against base branch: `git diff $(git merge-base origin/<default-branch> HEAD)..HEAD`
 - N1 memory files if available: `plan.md`, `implementation.md` (so developer understands intent)
 - For each failed check: the check name, category, and truncated log output
+- Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one answering a current question rather than verifying committed code) under `.n1/scratch/benchmarks/` or `.n1/scratch/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Fixes that need real regression coverage still get committed tests in the repo as usual. When unsure, default to scratch.
 
 **Developer agent instructions (append to standard developer prompt):**
 

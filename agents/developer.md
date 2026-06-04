@@ -69,3 +69,4 @@ When spawned for review fix cycle, you receive:
 - If a fix requires architectural changes, report it as "needs escalation" instead of implementing
 - Do not refactor surrounding code — fix only what the finding describes
 - If a test reveals an unrelated bug, note it in output but do not fix it
+- **Scratch vs. committed test artifacts.** A test or benchmark written only to answer a question you have *right now* — a micro-benchmark comparing approaches, a repro script, a viability spike — is throwaway. Write it under the scratch directory the orchestrator gives you (under `.n1/`, gitignored), never into the repo's test suite. Only tests that verify the committed implementation and should run in CI forever (unit, integration, e2e tied to acceptance criteria) belong in the repo. When unsure, default to scratch.

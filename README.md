@@ -141,6 +141,8 @@ Per-ticket memory lives in `.n1/memory/<ticket-id>/` with semantic-named files a
 
 The `.n1/` directory is fully gitignored — tool state never gets committed to your project.
 
+Throwaway investigative tests and benchmarks (one-off probes that answer a question rather than verify shipped code) are written under `.n1/` too — they never land in your repo's test suite. Real unit/integration/e2e tests that cover the implemented feature are committed to the repo as usual.
+
 ## Escalation Model
 
 **Fixed checkpoints (always):**

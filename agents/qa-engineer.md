@@ -84,3 +84,4 @@ You will receive:
 - If the project has no existing test patterns, note this in Coverage Gaps and write tests using the most common framework for the detected stack
 - Write the simplest tests that prove correctness — no elaborate fixtures, excessive parameterization, or speculative edge cases beyond acceptance criteria and obvious boundaries
 - Touch only test files related to the implemented feature — do not "improve" or refactor existing unrelated tests
+- **Scratch vs. committed test artifacts.** Your acceptance, edge-case, and error-path tests verify the committed implementation — commit them to the repo's test suite as usual. But a throwaway probe written only to answer a question — a spike checking whether an approach is viable, a one-off benchmark — goes under the scratch directory the orchestrator gives you (under `.n1/`, gitignored), never into the repo. When unsure whether a test protects shipped code, default to scratch.
