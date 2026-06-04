@@ -257,6 +257,7 @@ Spawn the solution-architect agent with:
 - Content of `ticket.md` as the scope to analyze
 - The **Type** field extracted from `ticket.md` (bug/feature/task/improvement) — pass it explicitly so the architect knows whether to perform bug investigation
 - Directive: "Research relevant industry standards/best practices per agents/research-standards.md and include the cited Industry Standards & Best Practices section."
+- Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/analysis.md`
@@ -298,6 +299,7 @@ State your reasoning: "This task is [simple/complex] because [reason]. [Skipping
 Before calling superpowers:writing-plans, spawn solution-architect again with:
 - Content of `ticket.md` and `brainstorm.md`
 - Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning. Also research applicable industry standards/best practices per agents/research-standards.md and cite them."
+- Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 Write output to `.n1/memory/<ID>/analysis.md` (overwrite with enriched version).
 
@@ -415,6 +417,7 @@ Pass to subagent-driven-development:
   - Follow existing patterns; introduce no new architectural patterns or dependencies.
   - Every change has a corresponding test (or verify existing tests cover it); commit each logical change separately (atomic commits).
   - If a change requires architectural decisions, report it as "needs escalation" instead of implementing; do not refactor surrounding code.
+  - **Scratch vs. committed test artifacts** — a benchmark or test written only to answer a current question (approach comparison, repro, spike) is throwaway: write it under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (gitignored), never into the repo's test suite. Tests verifying the committed change still go into the repo. When unsure, default to scratch.
 - If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) For a structural binding rather than a text instruction, set the `CLAUDE_CODE_SUBAGENT_MODEL` environment variable to `<model>` around the SDD dispatch — it is the documented highest-precedence override for subagent model selection and binds even when SDD spawns its own subagents. Fall back to the text instruction only if the env var cannot be set.
 
 **SDD overrides (IMPORTANT):**
@@ -479,6 +482,7 @@ Spawn the qa-engineer agent with:
 - Content of `implementation.md` (what was built, files changed)
 - Content of `plan.md` or `brainstorm.md` (scope context)
 - The `## Key Decisions` and `## Escalations` slices of `overview.md` (NOT the whole file) — so QA knows which choices were deliberate and why, instead of re-litigating them
+- Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/qa.md`
