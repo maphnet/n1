@@ -52,6 +52,7 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 - Skills invoke each other via `**REQUIRED SUB-SKILL:** Use plugin:skill-name` directives
 - No Co-Authored-By trailers in commits
 - **Timestamps:** Never let the model invent a timestamp — it has no clock and will hallucinate (e.g. drifting `+1h` on each rewrite). Date-only needs (spec/plan filenames `YYYY-MM-DD`) use the harness-injected `currentDate`. Precise time (time-of-day, durations) must come from the `date` command, e.g. `date -u +%Y-%m-%dT%H:%M:%SZ`. Don't add timestamp fields unless something actually reads them — file mtime already records "last modified".
+- **Test & benchmark artifacts:** Tests/benchmarks that verify committed implementation (unit, integration, e2e tied to acceptance criteria) go in the repo and run in CI. Throwaway probes that only answer a current question (approach micro-benchmarks, repro scripts, viability spikes) go under `.n1/` (gitignored) — per-ticket `.n1/memory/<ID>/{benchmarks,tests}/`, or `.n1/scratch/{benchmarks,tests}/` when there is no ticket memory. When unsure, default to scratch. Bound into the `solution-architect`, `developer`, and `qa-engineer` personas; concrete paths are passed by the skills at spawn time.
 
 ## Architecture
 
