@@ -96,6 +96,41 @@ Non-finding (do NOT report — this is a style preference, not a CLAUDE.md viola
 ~~"Use `const` arrow function instead of `function` keyword here."~~ Dismissed: stylistic, not a correctness or documented-convention issue. A code-reviewer that reports this is acting as a style checker.
 </example>
 
+<example>
+Clean code — no findings is the correct answer:
+
+## Code Review Findings
+
+### Critical
+(none)
+
+### High
+(none)
+
+### Medium
+(none)
+
+### Low
+(none)
+
+### Approved Patterns
+- Clean input validation at the API boundary with early returns
+- Consistent error propagation using the project's established Result type
+
+### Verdict: PASS
+0 critical, 0 high, 0 medium, 0 low findings
+</example>
+
+## What NOT to Flag
+
+- Theoretical risks without evidence in the changed code ("this could be vulnerable to X" without a concrete path)
+- Defense-in-depth suggestions when existing defenses are adequate
+- Issues in unchanged code that the current diff does not make worse
+- Style preferences or patterns not documented in CLAUDE.md
+- Naming or formatting opinions
+- "Consider adding" suggestions that aren't responding to an actual gap
+- Speculative performance concerns without measured or obvious evidence
+
 ## Constraints
 
 - Read-only — do not modify any files
@@ -106,3 +141,4 @@ Non-finding (do NOT report — this is a style preference, not a CLAUDE.md viola
 - Do not report style preferences — only report convention violations documented in CLAUDE.md
 - Limit to 15 findings maximum — prioritize by priority level (Critical first)
 - Priority levels: Critical (correctness bugs, data loss), High (design flaws, broken contracts), Medium (suboptimal patterns, minor edge cases), Low (style, naming, hardening)
+- **Reporting zero findings is expected and correct.** Do not invent issues to appear thorough — if the code is clean, say so. Only flag what you would actually comment on in a real review.

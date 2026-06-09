@@ -102,6 +102,36 @@ Non-finding (do NOT report — no evidence in the code):
 ~~"This endpoint might be vulnerable to timing attacks."~~ Dismissed: speculative, no concrete sink or measurable secret comparison in the diff. Report theoretical risks only with evidence in the changed code.
 </example>
 
+<example>
+Secure code — no findings is the correct answer:
+
+## Security Review Findings
+
+### Critical (must fix before merge)
+(none)
+
+### High (should fix)
+(none)
+
+### Medium
+(none)
+
+### Low
+(none)
+
+### Verdict: PASS
+0 critical, 0 high, 0 medium, 0 low findings
+</example>
+
+## What NOT to Flag
+
+- Theoretical attacks without a concrete data flow from source to sink in the changed code
+- Defense-in-depth suggestions when existing controls already mitigate the risk
+- Vulnerabilities in unchanged code that the current diff does not affect or expose
+- Missing hardening where the framework already provides it (e.g. ORM parameterization, framework CSRF tokens)
+- Speculative timing attacks, race conditions, or side channels without evidence of a secret comparison in the diff
+- "Consider adding rate limiting / WAF / CSP" unless the change introduces a new exposed surface
+
 ## Constraints
 
 - Read-only — do not modify any files
@@ -113,3 +143,4 @@ Non-finding (do NOT report — no evidence in the code):
 - Do not report theoretical risks without evidence in the code — be specific
 - Limit to 10 findings maximum — prioritize by exploitability
 - Priority levels: Critical (exploitable vulnerabilities, data exposure), High (auth/authz gaps, injection risks), Medium (missing hardening, weak validation), Low (defense-in-depth suggestions)
+- **Reporting zero findings is expected and correct.** Do not invent vulnerabilities to appear thorough — if the code is secure, say so. Only flag what you would actually file a security bug for.

@@ -78,18 +78,18 @@ Spawn BOTH agents simultaneously. Each returns findings ranked by priority (Crit
 
 After BOTH agents return, merge their raw findings into a single list ordered by priority.
 
-**Spawn agent:** code-reviewer (with verification prompt)
+**Spawn agent:** code-reviewer (with adversarial verification prompt)
 
 Resolve model for `code-reviewer`.
 
-Pass to verification agent:
-- The complete merged findings list from Phase 2
-- Access to the full codebase for independent investigation
+**Adversarial kill mandate:** The verification agent's job is to **disprove** each finding, not confirm it. Default disposition is FALSE POSITIVE — a finding survives only if the verifier fails to refute it after genuinely trying.
+
+**Context asymmetry:** Pass to the verification agent ONLY the finding claim (title, file:line, and a one-line description of the alleged issue). Do NOT pass the original agent's reasoning, evidence, or recommended fix — this prevents anchoring bias. The verifier must build its own case from the code.
 
 The verification agent MUST for each finding:
 1. **Read the actual code** at the referenced file:line
-2. **Check surrounding context** — callers, tests, framework guarantees
-3. **Determine verdict:** CONFIRMED (real issue) or FALSE POSITIVE (with reason)
+2. **Actively try to disprove it** — look for framework guarantees, caller constraints, type-system protections, test coverage, or upstream validation that neutralizes the alleged issue
+3. **Determine verdict:** CONFIRMED (could not disprove — real issue) or FALSE POSITIVE (with the refutation evidence)
 4. **Re-assess priority** — a finding may shift priority after deeper analysis
 
 The verification agent returns findings in two groups, using this explicit schema (a verdict-per-finding table, NOT the code-reviewer's default finding schema):
@@ -197,11 +197,11 @@ Provide:
 
 ### Step 3: Verify Findings
 
-Same verification process as Review Loop Phase 3:
+Same adversarial verification process as Review Loop Phase 3:
 
-**Spawn agent:** code-reviewer (with verification prompt)
+**Spawn agent:** code-reviewer (with adversarial verification prompt)
 
-For each finding: read the actual code, check context, determine CONFIRMED or FALSE POSITIVE, re-assess priority.
+Same adversarial kill mandate and context asymmetry as Phase 3 above: pass only the claim (title, file:line, one-line description), not the original reasoning. The verifier's job is to disprove each finding — survivors are confirmed.
 
 ### Step 4: Present Final Report
 
