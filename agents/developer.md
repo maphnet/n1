@@ -1,7 +1,7 @@
 ---
 name: developer
 description: "Use to implement plan tasks or fix review/CI findings. Writes code and tests and commits atomically; implements only — does not architect or redesign."
-model: opus
+model: sonnet
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
