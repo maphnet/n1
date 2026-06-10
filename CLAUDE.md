@@ -104,13 +104,27 @@ When `tracker.assignToCreator` is not `false` (default ON), `n1-start` assigns t
 
 On brain-dump/file runs where the user opts to create a ticket, `n1-start` adopts the **created ticket ID** as the per-ticket memory `<ID>` and branch name. An ID-Final invariant blocks any memory/branch write until that ID is known; if state was already written under the provisional slug, the idempotent `Reconcile Memory ID & Branch` procedure moves the memory folder and renames the branch (`git branch -m`) to the ticket-ID-based names.
 
+### Error Tracking Routing
+
+Optional integration with error-tracking systems (Sentry first, extensible to Datadog/Rollbar). Config-driven via `errorTracking` block in `n1.config.json` — same operations-map pattern as tracker routing. When `errorTracking` is `null` or absent, the feature is fully disabled.
+
+| Provider | mcp value | Key operations |
+|----------|-----------|---------------|
+| Sentry | `sentry` | `get_sentry_issue` (getIssue), `search_sentry_issues` (searchIssues), `list_projects` (listProjects), `get_autofix_state` (getAiAnalysis) |
+
+Two pipeline touchpoints:
+- **Intake** (n1-start + product-analyst): URL detection via `errorTracking.urlPattern`, MCP fetch of issue data + optional AI root-cause analysis, structured `ticket.md` with error-specific sections
+- **Analysis** (solution-architect): search for related issues via `errorTracking.operations.searchIssues`, reported in `analysis.md`
+
+Memory ID for error-tracker runs: `sentry-<issueId>` (provisional; replaced by tracker ticket ID if user creates one). Ticket creation is optional — reuses the brain-dump ticket-creation flow with a Sentry link prepended to the description.
+
 ### Agent Personas
 
 8 atomic agents with scoped tools and configurable models:
 
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
-| product-analyst | sonnet | inherits (needs dynamic tracker MCP) | Ticket read |
+| product-analyst | sonnet | inherits (needs dynamic tracker + error-tracking MCP) | Ticket read, Error intake |
 | solution-architect | opus | Read, Grep, Glob, Bash, WebSearch, WebFetch | Analysis, Bug investigation, Plan review (CCR) |
 | planner | opus | Read, Grep, Glob, Write, Edit, Skill, WebSearch, WebFetch | Plan writing |
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
