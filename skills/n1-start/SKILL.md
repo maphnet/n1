@@ -24,16 +24,26 @@ Check if `.n1/n1.config.json` exists on disk (use Read or Bash `test -f`, NOT gi
 
 The user provides one of:
 - **Ticket ID** — matches the tracker prefix from config (e.g., `TRID-510`, `PROJ-42`)
+- **Error tracker URL** — matches `errorTracking.urlPattern` from config (e.g., `https://myorg.sentry.io/issues/12345`)
 - **File path** — a path to a file containing requirements
 - **Brain dump** — free-text description of what needs to be built
 - **Resume** — ticket ID or slug where memory already exists
 
 ### Detect input type:
 
-1. Read `.n1/n1.config.json` → get `tracker.prefix`
+1. Read `.n1/n1.config.json` → get `tracker.prefix` and `errorTracking`
 2. If input matches `<prefix>-<number>` pattern → **Ticket mode**
-3. If input is a file path that exists on disk → **File mode**
-4. Otherwise → **Brain dump mode**
+3. If `errorTracking` is configured (not `null`, not absent) AND input matches `errorTracking.urlPattern` regex → **Error tracker mode**
+4. If input is a file path that exists on disk → **File mode**
+5. Otherwise → **Brain dump mode**
+
+### Error tracker URL parsing:
+
+When error tracker mode is detected, extract the issue ID from the URL:
+- Match the last numeric segment after `/issues/` in the URL path (e.g., `https://myorg.sentry.io/issues/12345` → `12345`)
+- If parsing fails (no numeric ID found), fall back to **Brain dump mode** with the URL as text content and warn: "Could not parse issue ID from URL — treating as brain dump."
+- Store the original URL for later use in ticket.md and tracker ticket creation.
+- The provisional memory ID is `sentry-<issueId>` (e.g., `sentry-12345`). The `sentry-` prefix avoids collision with numeric ticket IDs.
 
 ## Model Resolution
 
@@ -155,7 +165,20 @@ The product-analyst accepts three input modes. Choose based on input type:
    - `mode`: "text"
    - `content`: the raw input text
 
-**ID-Final invariant.** No file may be written under `.n1/memory/` and no working branch may be created until `<ID>` is **final**: the ticket ID in ticket mode; the *created* ticket ID for brain-dump/file mode answered "Yes"; the slug only for brain-dump/file mode answered "No". Resolving the create-ticket decision (and, on "Yes", actually creating the ticket) therefore happens BEFORE the `ticket.md`/`overview.md` writes and branch creation below.
+**Error tracker mode** (input matches `errorTracking.urlPattern`):
+1. Read `.n1/n1.config.json` → `errorTracking.mcp`, `errorTracking.operations`, `errorTracking.orgSlug`, `errorTracking.projectSlug`
+2. Parse the issue ID from the URL (see Error tracker URL parsing above)
+3. The provisional `<ID>` is `sentry-<issueId>`. Run **Ensure Working Branch(`sentry-<issueId>`)** now, before spawning the analyst.
+4. Spawn product-analyst with:
+   - `mode`: "error-tracker"
+   - `issueId`: the parsed issue ID
+   - `issueUrl`: the original URL
+   - `errorTrackingMcp`: from config
+   - `operations`: from config (`errorTracking.operations`)
+   - `orgSlug`: from config
+   - `projectSlug`: from config
+
+**ID-Final invariant.** No file may be written under `.n1/memory/` and no working branch may be created until `<ID>` is **final**: the ticket ID in ticket mode; the *created* ticket ID for brain-dump/file/error-tracker mode answered "Yes"; the slug only for brain-dump/file mode answered "No"; `sentry-<issueId>` for error-tracker mode answered "No" (or when no tracker is configured). Resolving the create-ticket decision (and, on "Yes", actually creating the ticket) therefore happens BEFORE the `ticket.md`/`overview.md` writes and branch creation below.
 
 **Tracker ticket creation (brain dump and file modes):**
 
@@ -211,6 +234,44 @@ The task has been structured. Would you like to create a tracker ticket?
 **If 2 (No):**
 - Use description slug as memory ID for brain dump (e.g., `csv-export-users`) or filename slug for file mode (e.g., `requirements` from `requirements.md`)
 - Now that the slug `<ID>` is known, run **Ensure Working Branch(`<slug>`)** (see Working Branch above)
+- Skip tracker status updates throughout the pipeline
+
+**Tracker ticket creation (error tracker mode):**
+
+After product-analyst returns, if the input was an error tracker URL:
+
+**If a tracker is configured** (`tracker.mcp` is not null AND `tracker.operations.createIssue` exists):
+
+Ask the user:
+```
+The Sentry issue has been analyzed. Would you like to create a tracker ticket?
+1 — Yes, create a ticket in <tracker.mcp>
+2 — No, continue with sentry-<issueId> as the working ID
+```
+
+**If 1 (Yes):**
+
+> ⚠ **Create the ticket now.** Same mandatory-immediate semantics as brain-dump "Yes" (see ID-Final invariant above).
+
+1. Extract the Title and structured content from the product-analyst output
+2. **Prepend Sentry link to description:** The first line of `<description>` is `**Sentry:** [#<issueId>](<original URL>)`, followed by a blank line, then the Core Ask + Description + Acceptance Criteria sections.
+3. **Resolve ticket tagging** — same logic as brain-dump ticket creation (see above).
+   - If tagging is ON: `<summary>` = `<service> | <Title>` (with idempotency guard); `<description>` = `**Service:** <service>` line, blank line, then the Sentry-prefixed description from step 2.
+   - If tagging is OFF: `<summary>` = the Title; `<description>` = the Sentry-prefixed description from step 2.
+4. Create the ticket via MCP — same YouTrack/Jira logic as brain-dump ticket creation (see above).
+5. The returned ticket ID is the final `<ID>`. Adopt it:
+   1. The provisional ID is `sentry-<issueId>`.
+   2. Run **Reconcile Memory ID & Branch(`sentry-<issueId>`, `<ticketID>`)**.
+   3. Set `<ID>` = `<ticketID>`, then run **Ensure Working Branch(`<ticketID>`)**.
+6. Extract the ticket URL, assign to creator, report — same as brain-dump ticket creation (steps 5-8 above).
+
+**If 2 (No):**
+- `sentry-<issueId>` is the final `<ID>`
+- The working branch was already created in the error tracker mode block above
+- Skip tracker status updates throughout the pipeline
+
+**If no tracker is configured** (`tracker.mcp` is null or `tracker.operations.createIssue` does not exist):
+- Skip the prompt entirely — `sentry-<issueId>` is the final `<ID>`
 - Skip tracker status updates throughout the pipeline
 
 **For all modes:**
