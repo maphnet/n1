@@ -345,6 +345,92 @@ Auto-assign created tickets to you: <true/false>
 - **1** → leave unchanged.
 - **2** → flip the boolean.
 
+## Error Tracking Configuration
+
+Detect available error-tracking MCP servers by attempting a lightweight discovery call. Currently supported: Sentry.
+
+**Detection:** Attempt `mcp__sentry__list_projects` (no arguments). If it succeeds, the Sentry MCP server is available. If it fails or times out, skip this section silently — no error-tracking setup offered.
+
+**If Sentry MCP detected:**
+
+```
+Error tracking integration detected: Sentry MCP server
+Enable Sentry integration? 1 — Yes / 2 — No (default)
+```
+
+**If 2 (No) or default:**
+```json
+{
+  "errorTracking": null
+}
+```
+
+**If 1 (Yes):**
+
+1. Use the project list from the detection call result (or re-call `mcp__sentry__list_projects`).
+2. Present selection — number each project, plus a manual-entry option:
+   ```
+   Select Sentry project:
+   1 — my-backend (my-org)
+   2 — my-frontend (my-org)
+   3 — Enter manually
+   ```
+   - If numbered option: extract `orgSlug` and `projectSlug` from the selected project.
+   - If "Enter manually": ask for `orgSlug` and `projectSlug` separately.
+3. Auto-generate `urlPattern`: `sentry\\.io/issues/|<orgSlug>\\.sentry\\.io/issues/`
+4. Operations map is preset (not asked interactively):
+   ```json
+   {
+     "getIssue": "get_sentry_issue",
+     "searchIssues": "search_sentry_issues",
+     "listProjects": "list_projects",
+     "getAiAnalysis": "get_autofix_state"
+   }
+   ```
+   **Implementation note:** verify actual tool names against the live MCP server during development (call `ToolSearch` or list available tools); the names above are based on research and may differ from the actual server's tool identifiers.
+5. Confirm:
+   ```
+   Sentry integration:
+     Org: my-org
+     Project: my-backend
+     URL pattern: sentry\.io/issues/|my-org\.sentry\.io/issues/
+   ```
+
+```json
+{
+  "errorTracking": {
+    "mcp": "sentry",
+    "operations": {
+      "getIssue": "get_sentry_issue",
+      "searchIssues": "search_sentry_issues",
+      "listProjects": "list_projects",
+      "getAiAnalysis": "get_autofix_state"
+    },
+    "urlPattern": "sentry\\.io/issues/|<orgSlug>\\.sentry\\.io/issues/",
+    "projectSlug": "<selected>",
+    "orgSlug": "<selected>"
+  }
+}
+```
+
+### On reconfiguration (n1-init re-run):
+
+If `errorTracking` already exists and is not `null`, show current config and offer:
+```
+Current error tracking:
+  Provider: sentry
+  Project: <projectSlug> (<orgSlug>)
+
+1 — Keep current
+2 — Change project
+3 — Disable
+```
+- **1** → leave unchanged.
+- **2** → re-run the project selection flow above (detection call, project list, confirm).
+- **3** → set `"errorTracking": null`.
+
+If `errorTracking` is `null` or absent, re-run detection from scratch (same as fresh setup).
+
 ## Review Configuration
 
 Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless they explicitly requested review customization when invoking n1-init.
@@ -422,6 +508,7 @@ Create all files:
   "tracker": { ... },
   "git": { ... },
   "ticketTagging": { ... },
+  "errorTracking": null,
   "escalation": {
     "checkpoints": ["pr"],
     "alwaysAskOn": ["security", "architecture", "public-api"]
@@ -477,6 +564,7 @@ Tracker: Jira (TRID) / YouTrack / None
 Default branch: main
 Branch pattern: {prefix}-{id}
 Ticket tagging: payments-api / disabled
+Error tracking: Sentry (my-backend @ my-org) / disabled
 
 Created:
   .n1/n1.config.json
