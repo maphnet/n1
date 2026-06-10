@@ -69,6 +69,10 @@ You will receive:
 <cited bullets — each: claim — source URL — fitness note; or "None applicable">
 **Considered & rejected:** <practice — source URL — why it doesn't fit this scope; or "None">
 
+### Related Error-Tracker Issues (error tracker mode only)
+- #<id>: <title> — <similarity reason> (<status>, <event count>)
+(or "No related issues found" / "Error tracking search unavailable")
+
 ### Risks & Considerations
 - <risk>: <mitigation suggestion>
 

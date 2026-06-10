@@ -320,6 +320,13 @@ Spawn the solution-architect agent with:
 - Directive: "Research relevant industry standards/best practices per agents/research-standards.md and include the cited Industry Standards & Best Practices section."
 - Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
+**Error-tracking enrichment (error tracker mode only):**
+
+If the task originated from an error tracker URL (ticket.md Source contains an error tracker reference):
+1. Read `.n1/n1.config.json` → `errorTracking.mcp` and `errorTracking.operations`
+2. Append the error-tracking search MCP tool to the agent's tool grant: add `mcp__<errorTracking.mcp>__<errorTracking.operations.searchIssues>` to the `tools` list for this spawn (e.g., `Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__sentry__search_sentry_issues`)
+3. Add directive: "Search the error-tracking system for related issues using `mcp__<errorTracking.mcp>__<errorTracking.operations.searchIssues>`. Look for issues with the same exception type, affected file, or error message. Include findings in the Related Error-Tracker Issues section of your output."
+
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/analysis.md`
 - Update overview: `[x] Analysis`, set `step: analysis`
