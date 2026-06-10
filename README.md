@@ -10,6 +10,7 @@ N1 orchestrates the full development cycle using 8 specialized agent personas an
 - [Superpowers](https://github.com/obra/superpowers) plugin ^5.0
 - `git` and `gh` (GitHub CLI) on PATH
 - Optional: Jira (Atlassian MCP) or YouTrack MCP for tracker integration
+- Optional: Sentry MCP for error-tracking integration
 
 ## Installation
 
@@ -34,6 +35,7 @@ claude --plugin-dir /path/to/n1
 # 2. Start working on a task
 /n1:n1-start TRID-510              # from a tracker ticket
 /n1:n1-start add CSV export users  # from a brain dump
+/n1:n1-start https://myorg.sentry.io/issues/12345  # from a Sentry error
 
 # 3. Or use skills standalone
 /n1:n1-review                      # review current branch (fix loop)
@@ -88,8 +90,9 @@ Interactive wizard:
 2. Enriches CLAUDE.md with detected conventions
 3. Configures tracker (Jira / YouTrack / None)
 4. Sets up git defaults and review policy
-5. Configures agent models (defaults or custom per-agent)
-6. Creates `.n1/` directory (fully gitignored)
+5. Detects and configures error tracking (Sentry)
+6. Configures agent models (defaults or custom per-agent)
+7. Creates `.n1/` directory (fully gitignored)
 
 ## Tracker Support
 
@@ -104,6 +107,16 @@ Tracker routing is config-driven via `.n1/n1.config.json` — all MCP tool names
 Created tickets can optionally be tagged with a service name. When `ticketTagging.enabled` is set (off by default; configured by `n1-init`), N1-created tickets get a `{service} | <title>` summary prefix and a `**Service:** <service>` line in the description.
 
 Tickets N1 creates are auto-assigned to you (the authenticated tracker user) by default. Set `tracker.assignToCreator` to `false` (or answer No during `n1-init`) to disable. Applies to created tickets only; never changes the assignee of existing tickets.
+
+## Error Tracking Support
+
+| Provider | MCP Server | Status |
+|----------|------------|--------|
+| Sentry | `sentry` (official MCP) | Supported |
+
+Error tracking is optional and independent of tracker integration. When configured via `n1-init`, N1 accepts error-tracker issue URLs as input to `n1-start`. The product-analyst fetches structured error data (stack trace, breadcrumbs, event frequency, AI root-cause analysis) and the solution-architect searches for related issues during codebase analysis.
+
+Sentry issues can optionally be promoted to tracker tickets (Jira/YouTrack) during the pipeline, or worked standalone with `sentry-<issueId>` as the working identifier.
 
 ## How It Works
 
