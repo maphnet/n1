@@ -23,6 +23,8 @@ You will receive ONE of three input modes:
 - `ticketId` — the ticket identifier (e.g., TRID-510)
 - `trackerMcp` — the MCP server name (e.g., plugin_atlassian_atlassian, youtrack)
 - `operations` — the operation-to-tool mapping from n1.config.json
+- `enrichmentEnabled` — boolean; when true and `operations.editTicket` exists, run description quality assessment and enrichment after fetching the ticket (default: false if omitted)
+- `cloudId` — (Jira only) the Atlassian cloud ID, required for `editJiraIssue` calls; omit for YouTrack
 
 ### Mode 2: File
 - `mode`: "file"
@@ -52,7 +54,7 @@ You will receive ONE of three input modes:
    - For YouTrack: also call `mcp__<trackerMcp>__<operations.getComments>` (comments are a separate endpoint)
    - For Jira: also call `mcp__<trackerMcp>__<operations.getTransitions>` to cache available status transitions
 
-2. **Analyze** the fetched content (continue to step 5).
+2. **Enrich the description** if needed (see Description Quality Assessment & Enrichment below), then **analyze** the fetched content (continue to step 5).
 
 ### For file mode:
 
@@ -87,6 +89,96 @@ You will receive ONE of three input modes:
 
 10. **Distill** into the output format below.
 
+### Description Quality Assessment & Enrichment (tracker ticket mode only)
+
+**Gate:** Run ONLY when ALL of: `enrichmentEnabled` is true, `operations.editTicket` exists, and the ticket was fetched successfully. If any condition fails, skip entirely — set Description Quality tier to "Skipped" in the output and proceed to distill.
+
+**Idempotency:** If the fetched description already contains the marker `*Structured by N1*` or `*Restructured by N1*`, skip enrichment — set tier to "Adequate (already enriched)" and proceed.
+
+Run this assessment AFTER fetching the ticket (step 1) but BEFORE the final distill (step 10). The analysis in steps 8-9 runs on the ORIGINAL description regardless of enrichment outcome — enrichment writes to the tracker, not to the analyst's working copy.
+
+**A. Determine ticket type** from the tracker's type/issue-type field. Map to: `bug`, `feature`, `task`, or `improvement`. If unavailable, infer from the title and description content.
+
+**B. Evaluate against type-aware minimum viable sections:**
+
+| Type | Required sections |
+|------|------------------|
+| Bug | steps to reproduce, actual vs expected behavior, environment, severity |
+| Feature/Story | user context, acceptance criteria, scope boundaries |
+| Task/Improvement | definition of done, acceptance criteria |
+
+**C. Assign quality tier** (evaluate in order — first match wins):
+
+| Tier | Condition |
+|------|-----------|
+| **Empty** | Description is blank, whitespace-only, or contains only boilerplate (e.g., just a template with no filled-in content) |
+| **Skeletal** | Description exists but has ≤1 meaningful sentence OR is missing acceptance criteria entirely |
+| **Weak** | Description has content but ≥2 ambiguities detected OR missing ≥2 type-specific required sections |
+| **Adequate** | Everything else — description has meaningful content with acceptance criteria and ≤1 ambiguity |
+
+**D. Act on the tier:**
+
+- **Adequate** → skip enrichment, proceed to distill.
+
+- **Empty** or **Skeletal** → generate enrichment content and update the tracker silently:
+  1. Construct append content — infer from the title, ticket type, and any available comments:
+     ```
+     ---
+     *Structured by N1*
+
+     ### Acceptance Criteria
+     - [ ] <inferred criterion 1>
+     - [ ] <inferred criterion 2>
+
+     ### <Type-specific section(s) — only sections that are missing>
+     <content inferred from title, comments, and available context>
+     ```
+     Only add sections the description is missing. If it already has informal acceptance criteria, do not duplicate them.
+  2. Construct the full new description: `<original description>\n\n` + append content. For Empty tier where original is blank, omit the leading `\n\n` — start with the content directly.
+  3. Update the tracker:
+     - **Jira:** Call `mcp__<trackerMcp>__<operations.editTicket>` with `cloudId`: `<cloudId>`, `issueIdOrKey`: `<ticketId>`, `description`: `<full new description>`
+     - **YouTrack:** Call `mcp__<trackerMcp>__<operations.editTicket>` with `issueId`: `<ticketId>`, `description`: `<full new description>`
+  4. If the MCP call fails: log "⚠ Enrichment failed: <reason>" and proceed — enrichment is non-blocking. Never stop the pipeline for an enrichment failure.
+
+- **Weak** → generate a proposed rewrite and present to the user for approval:
+  1. Construct the rewrite:
+     ```
+     <details><summary>Original description</summary>
+
+     <original text>
+
+     </details>
+
+     ### Core Ask
+     <1-2 sentences summarizing what needs to happen>
+
+     ### Acceptance Criteria
+     - [ ] <criterion>
+
+     ### <Type-specific sections — all required sections for this ticket type>
+     <content>
+
+     ---
+     *Restructured by N1*
+     ```
+  2. Present to the user:
+     ```
+     The ticket description has gaps: <list specific gaps, e.g., "missing acceptance criteria, no steps to reproduce, vague scope">.
+
+     **Current description:**
+     <current description text>
+
+     **Proposed rewrite:**
+     <proposed rewrite>
+
+     1 — Apply rewrite
+     2 — Skip, continue with current description
+     ```
+  3. If user chooses **1**: update the tracker (same MCP call pattern as Empty/Skeletal, but with the full rewrite as the `description` value). If the MCP call fails: log warning, proceed.
+  4. If user chooses **2**: skip. The Ambiguities section in ticket.md will capture the gaps for downstream agents.
+
+**E. Record the tier and action** for the Description Quality output section below.
+
 ## Output Format
 
 ```markdown
@@ -114,6 +206,11 @@ You will receive ONE of three input modes:
 
 ### Ambiguities
 <contradictions, missing info, unclear requirements — omit section if none>
+
+### Description Quality (tracker mode only, when enrichment is enabled)
+**Tier:** <Empty / Skeletal / Weak / Adequate / Skipped>
+**Action:** <"Appended structured sections" / "Rewrite applied (user-approved)" / "Rewrite declined by user" / "Skipped (adequate)" / "Skipped (already enriched)" / "Skipped (enrichment disabled)" / "Failed: <reason>">
+**Sections added:** <list of sections appended/rewritten, or "None">
 
 ### Error Details (error tracker mode only)
 **Error:** <exception type and message>
