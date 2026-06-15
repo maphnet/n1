@@ -155,7 +155,8 @@ Set config:
       "search": "searchJiraIssuesUsingJql",
       "createIssue": "createJiraIssue",
       "getCurrentUser": "atlassianUserInfo",
-      "assign": "editJiraIssue"
+      "assign": "editJiraIssue",
+      "editTicket": "editJiraIssue"
     },
     "statuses": {
       "todo": "<detected or manual>",
@@ -216,7 +217,8 @@ Set config:
       "search": "search_issues",
       "createIssue": "create_issue",
       "getCurrentUser": "get_current_user",
-      "assign": "change_issue_assignee"
+      "assign": "change_issue_assignee",
+      "editTicket": "update_issue"
     },
     "statuses": {
       "todo": "<detected or manual>",
