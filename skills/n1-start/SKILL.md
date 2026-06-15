@@ -146,13 +146,17 @@ The product-analyst accepts three input modes. Choose based on input type:
 
 **Ticket mode** (input matches `<prefix>-<number>`):
 0. The `<ID>` is already known (the ticket ID). Run **Ensure Working Branch(`<ticketId>`)** (see Working Branch above) now, before spawning the analyst.
-1. Read `.n1/n1.config.json` → `tracker.mcp` and `tracker.operations`
-2. Spawn product-analyst with:
+1. Read `.n1/n1.config.json` → `tracker.mcp`, `tracker.operations`, and `ticketEnrichment`
+2. Determine enrichment eligibility: `enrichmentEnabled` = `ticketEnrichment.enabled !== false` (default true when block is absent) AND `tracker.operations.editTicket` exists
+3. For Jira only: if `enrichmentEnabled` is true, resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources` (reuse if already cached from a prior call in this session)
+4. Spawn product-analyst with:
    - `mode`: "ticket"
    - `ticketId`: the parsed ticket ID
    - `trackerMcp`: from config
    - `operations`: from config
-3. After agent returns, update tracker status to In Progress:
+   - `enrichmentEnabled`: from step 2
+   - `cloudId`: (Jira only) from step 3; omit for YouTrack
+5. After agent returns, update tracker status to In Progress:
    - Call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`
 
 **File mode** (input is a file path that exists on disk):
