@@ -354,6 +354,66 @@ After brainstorming completes (the design already lives in `.n1/memory/<ID>/brai
 - Update overview: `[x] Brainstorm`, set `step: brainstorm`
 - Record key decisions in overview's `## Key Decisions` section
 
+### Post-Brainstorm Enrichment (Phase 2)
+
+**Gate:** Run ONLY when ALL conditions are met:
+1. A tracker ticket ID exists (ticket mode, OR brain-dump/file/error-tracker mode where the user created a ticket)
+2. `ticketEnrichment.enabled !== false` (from config; default true when block is absent)
+3. `tracker.operations.editTicket` exists
+4. `tracker.operations.addComment` exists
+
+If any condition fails, skip silently and proceed to Complexity Decision.
+
+**Process:**
+
+1. Read `brainstorm.md` — extract:
+   - Refined acceptance criteria (more specific than what Phase 1 may have added)
+   - Scope boundaries (in-scope / out-of-scope)
+   - Design approach summary (1-2 sentences)
+   - Key design decisions (bulleted list)
+
+2. **Check whether brainstorming produced meaningful refinements.** Compare the brainstorm output against `ticket.md`'s acceptance criteria. If the brainstorm AC are substantively identical to what's already in the ticket (Phase 1 enrichment or original), skip the description update. Always post the comment (the design summary is new information regardless).
+
+3. **Update description** (append) — only if refinements exist:
+   - First, fetch the current description from the tracker: call `mcp__<tracker.mcp>__<tracker.operations.readTicket>` with the ticket ID to get the latest description (it may have been modified by Phase 1 or manually since).
+   - Construct append content:
+     ```
+     ---
+     *Refined after design review — N1*
+
+     ### Refined Acceptance Criteria
+     - [ ] <refined criterion — more specific than earlier>
+
+     ### Scope Boundaries
+     - In scope: <what's included>
+     - Out of scope: <what's explicitly excluded>
+     ```
+     Only include sections that add new information. If brainstorming didn't refine AC, omit that section. If no scope boundaries were discussed, omit that section. If BOTH would be omitted, skip the description update entirely.
+   - Idempotency: if the current description already contains `*Refined after design review — N1*`, skip the description update (already applied in a prior run).
+   - Call `mcp__<tracker.mcp>__<tracker.operations.editTicket>`:
+     - **Jira:** with `cloudId` (resolve via `getAccessibleAtlassianResources` if not cached), `issueIdOrKey`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
+     - **YouTrack:** with `issueId`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
+   - If the MCP call fails: log "⚠ Post-brainstorm description update failed: <reason>" and continue — non-blocking.
+
+4. **Post design summary comment:**
+   - Construct comment:
+     ```
+     **Design Summary (N1)**
+
+     Approach: <1-2 sentence summary of chosen approach from brainstorm>
+     Key decisions:
+     - <decision 1>
+     - <decision 2>
+
+     Design doc: internal (per-ticket memory)
+     ```
+   - Call `mcp__<tracker.mcp>__<tracker.operations.addComment>`:
+     - **Jira:** with `cloudId`, `issueIdOrKey`: `<ticketId>`, `body`: `<comment text>`
+     - **YouTrack:** with `issueId`: `<ticketId>`, `text`: `<comment text>`
+   - If the MCP call fails: log "⚠ Design summary comment failed: <reason>" and continue — non-blocking.
+
+5. Log: "Tracker updated with refined requirements and design summary." (or "Tracker enrichment skipped." if gated out)
+
 ### Complexity Decision
 
 Based on brainstorming output, determine complexity:
