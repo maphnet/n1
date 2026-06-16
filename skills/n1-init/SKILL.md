@@ -143,6 +143,7 @@ Set config:
 ```json
 {
   "tracker": {
+    "type": "jira",
     "mcp": "plugin_atlassian_atlassian",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
@@ -205,6 +206,7 @@ Set config:
 ```json
 {
   "tracker": {
+    "type": "youtrack",
     "mcp": "youtrack",
     "prefix": "<from project selection>",
     "projectKey": "<from project selection>",
@@ -577,4 +579,9 @@ Created:
   .gitignore updated
 
 Next: Use /n1:n1-start <ticket-or-description> to begin working on a task.
+```
+
+If `tracker.mcp` is not null, append after the summary:
+```
+⚠ To activate tracker routing, reload the session: type /clear or restart Claude Code.
 ```
