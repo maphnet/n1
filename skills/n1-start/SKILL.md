@@ -146,16 +146,16 @@ The product-analyst accepts three input modes. Choose based on input type:
 
 **Ticket mode** (input matches `<prefix>-<number>`):
 0. The `<ID>` is already known (the ticket ID). Run **Ensure Working Branch(`<ticketId>`)** (see Working Branch above) now, before spawning the analyst.
-1. Read `.n1/n1.config.json` → `tracker.mcp`, `tracker.operations`, and `ticketEnrichment`
+1. Read `.n1/n1.config.json` → `tracker.type`, `tracker.mcp`, `tracker.operations`, and `ticketEnrichment`
 2. Determine enrichment eligibility: `enrichmentEnabled` = `ticketEnrichment.enabled !== false` (default true when block is absent) AND `tracker.operations.editTicket` exists
-3. For Jira only: if `enrichmentEnabled` is true, resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources` (reuse if already cached from a prior call in this session)
+3. If `tracker.type == "jira"` AND `enrichmentEnabled` is true: resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources` (reuse if already cached from a prior call in this session). Use exactly `mcp__<tracker.mcp>__` as the tool prefix — the value from config, not from the tool list.
 4. Spawn product-analyst with:
    - `mode`: "ticket"
    - `ticketId`: the parsed ticket ID
-   - `trackerMcp`: from config
-   - `operations`: from config
+   - `trackerMcp`: from config (`tracker.mcp`)
+   - `operations`: from config (`tracker.operations`)
    - `enrichmentEnabled`: from step 2
-   - `cloudId`: (Jira only) from step 3; omit for YouTrack
+   - `cloudId`: (only when `tracker.type == "jira"`) from step 3; omit otherwise
 5. After agent returns, update tracker status to In Progress:
    - Call `mcp__<tracker.mcp>__<tracker.operations.moveStatus>`
 
@@ -207,15 +207,15 @@ The task has been structured. Would you like to create a tracker ticket?
    - **Otherwise** (block missing, `enabled` false, or `service` empty) → tagging is OFF:
      - `<summary>` = the Title from product-analyst output.
      - `<description>` = the Core Ask + Description + Acceptance Criteria sections.
-3. Create the ticket via MCP:
-   - **YouTrack:** Call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
-     - `project`: `tracker.projectKey`
-     - `summary`: `<summary>`
-     - `description`: `<description>`
-   - **Jira:** First resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources`, then call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
+3. Create the ticket via MCP. Use exactly `mcp__<tracker.mcp>__` as the tool prefix — the value from config, not from the tool list.
+   - If `tracker.type == "jira"`: First resolve `cloudId` via `mcp__<tracker.mcp>__getAccessibleAtlassianResources` (reuse if already cached), then call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
      - `cloudId`: resolved cloud ID
      - `projectKey`: `tracker.projectKey`
      - `issueTypeName`: "Task"
+     - `summary`: `<summary>`
+     - `description`: `<description>`
+   - Else (`tracker.type == "youtrack"`): Call `mcp__<tracker.mcp>__<tracker.operations.createIssue>` with:
+     - `project`: `tracker.projectKey`
      - `summary`: `<summary>`
      - `description`: `<description>`
 4. The returned ticket ID is the final `<ID>`. Adopt it deterministically:
@@ -224,12 +224,12 @@ The task has been structured. Would you like to create a tracker ticket?
    3. Set `<ID>` = `<ticketID>`, then run **Ensure Working Branch(`<ticketID>`)** (see Working Branch above).
 5. Extract the ticket URL from the MCP response (YouTrack returns it in the response body; for Jira construct it as `https://<cloud>/browse/<key>` from the response)
 6. **Assign to creator.** Run this step ONLY if ALL of: `tracker.assignToCreator !== false`, `tracker.operations.getCurrentUser` exists, AND `tracker.operations.assign` exists. If any condition fails, skip this step silently (no message) and go to step 7.
-   1. Resolve the current user: call `mcp__<tracker.mcp>__<tracker.operations.getCurrentUser>` (no arguments).
-      - **YouTrack:** take `login` from the response.
-      - **Jira:** take the account id (`account_id`) from the response; reuse the `cloudId` already resolved during creation.
-   2. Assign the ticket: call `mcp__<tracker.mcp>__<tracker.operations.assign>`:
-      - **YouTrack:** `change_issue_assignee` with `issueId`: `<ID>`, `assigneeLogin`: `<login>`.
-      - **Jira:** `editJiraIssue` with `cloudId`: resolved cloud ID, `issueIdOrKey`: `<ID>`, `assignee_account_id`: `<account id>`.
+   1. Resolve the current user: call `mcp__<tracker.mcp>__<tracker.operations.getCurrentUser>` (no arguments). Use exactly `mcp__<tracker.mcp>__` as the tool prefix.
+      - If `tracker.type == "jira"`: take the account id (`account_id`) from the response; reuse the `cloudId` already resolved during creation.
+      - Else (`tracker.type == "youtrack"`): take `login` from the response.
+   2. Assign the ticket: call `mcp__<tracker.mcp>__<tracker.operations.assign>`. Use exactly `mcp__<tracker.mcp>__` as the tool prefix.
+      - If `tracker.type == "jira"`: with `cloudId`: resolved cloud ID, `issueIdOrKey`: `<ID>`, `assignee_account_id`: `<account id>`.
+      - Else (`tracker.type == "youtrack"`): with `issueId`: `<ID>`, `assigneeLogin`: `<login>`.
    3. **On success:** set the report suffix to ` (assigned to you)`.
    4. **On failure** (either call errors — permission, unresolvable user, MCP error): do NOT roll back creation. Emit `⚠ Ticket created but could not auto-assign (<reason>); assign it manually.` and use an empty report suffix.
 7. Report: "Created ticket **[<ID>](<ticket URL>)**<report suffix>: <title>"
@@ -390,9 +390,9 @@ If any condition fails, skip silently and proceed to Complexity Decision.
      ```
      Only include sections that add new information. If brainstorming didn't refine AC, omit that section. If no scope boundaries were discussed, omit that section. If BOTH would be omitted, skip the description update entirely.
    - Idempotency: if the current description already contains `*Refined after design review — N1*`, skip the description update (already applied in a prior run).
-   - Call `mcp__<tracker.mcp>__<tracker.operations.editTicket>`:
-     - **Jira:** with `cloudId` (resolve via `getAccessibleAtlassianResources` if not cached), `issueIdOrKey`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
-     - **YouTrack:** with `issueId`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
+   - Call `mcp__<tracker.mcp>__<tracker.operations.editTicket>`. Use exactly `mcp__<tracker.mcp>__` as the tool prefix — the value from config, not from the tool list.
+     - If `tracker.type == "jira"`: with `cloudId` (resolve via `mcp__<tracker.mcp>__getAccessibleAtlassianResources` if not cached), `issueIdOrKey`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
+     - Else (`tracker.type == "youtrack"`): with `issueId`: `<ticketId>`, `description`: `<current description>\n\n<append content>`
    - If the MCP call fails: log "⚠ Post-brainstorm description update failed: <reason>" and continue — non-blocking.
 
 4. **Post design summary comment:**
@@ -407,9 +407,9 @@ If any condition fails, skip silently and proceed to Complexity Decision.
 
      Design doc: internal (per-ticket memory)
      ```
-   - Call `mcp__<tracker.mcp>__<tracker.operations.addComment>`:
-     - **Jira:** with `cloudId`, `issueIdOrKey`: `<ticketId>`, `body`: `<comment text>`
-     - **YouTrack:** with `issueId`: `<ticketId>`, `text`: `<comment text>`
+   - Call `mcp__<tracker.mcp>__<tracker.operations.addComment>`. Use exactly `mcp__<tracker.mcp>__` as the tool prefix — the value from config, not from the tool list.
+     - If `tracker.type == "jira"`: with `cloudId`, `issueIdOrKey`: `<ticketId>`, `body`: `<comment text>`
+     - Else (`tracker.type == "youtrack"`): with `issueId`: `<ticketId>`, `text`: `<comment text>`
    - If the MCP call fails: log "⚠ Design summary comment failed: <reason>" and continue — non-blocking.
 
 5. Log: "Tracker updated with refined requirements and design summary." (or "Tracker enrichment skipped." if gated out)
