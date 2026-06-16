@@ -38,6 +38,7 @@ claude --plugin-dir /path/to/n1
 /n1:n1-start https://myorg.sentry.io/issues/12345  # from a Sentry error
 
 # 3. Or use skills standalone
+/n1:n1-estimate TRID-510           # estimate a ticket
 /n1:n1-review                      # review current branch (fix loop)
 /n1:n1-review #340                 # advisory review of a PR
 /n1:n1-pr                          # create a pull request
@@ -91,8 +92,18 @@ Interactive wizard:
 3. Configures tracker (Jira / YouTrack / None)
 4. Sets up git defaults and review policy
 5. Detects and configures error tracking (Sentry)
-6. Configures agent models (defaults or custom per-agent)
-7. Creates `.n1/` directory (fully gitignored)
+6. Configures estimation (off by default — complexity tier → delivery time)
+7. Configures agent models (defaults or custom per-agent)
+8. Creates `.n1/` directory (fully gitignored)
+
+### `/n1:n1-estimate` — Task Estimation
+
+Estimates task complexity and delivery time. Runs the analysis pipeline (ticket read → codebase analysis → brainstorm), classifies complexity into a tier (XS–XL), and maps to a time estimate.
+
+- Writes estimate to tracker ticket (description + time field) when enabled
+- Reuses existing analysis if the ticket was previously analyzed
+- No branch creation or status transitions — read-only analysis
+- Configure via `/n1:n1-init` or set `estimation.enabled: true` in `.n1/n1.config.json`
 
 ## Tracker Support
 
@@ -117,6 +128,22 @@ Tickets N1 creates are auto-assigned to you (the authenticated tracker user) by 
 Error tracking is optional and independent of tracker integration. When configured via `n1-init`, N1 accepts error-tracker issue URLs as input to `n1-start`. The product-analyst fetches structured error data (stack trace, breadcrumbs, event frequency, AI root-cause analysis) and the solution-architect searches for related issues during codebase analysis.
 
 Sentry issues can optionally be promoted to tracker tickets (Jira/YouTrack) during the pipeline, or worked standalone with `sentry-<issueId>` as the working identifier.
+
+## Estimation
+
+Optional complexity classification that maps tasks to delivery time estimates. Off by default — enable via `n1-init` or set `estimation.enabled: true` in `.n1/n1.config.json`.
+
+| Tier | Default Time | Characteristics |
+|------|-------------|-----------------|
+| XS | 30m | Config change, typo, single-line fix |
+| S | 2h | Single file, clear scope, no migrations |
+| M | 6h | 2-5 files, may need tests, straightforward |
+| L | 2d | Multiple files, migrations, new tests |
+| XL | 5d | Cross-cutting, architectural, multi-subsystem |
+
+Times represent total delivery (including QA/review), not just coding. Default mapping is overridable per-project via `estimation.mapping` in config.
+
+When enabled, estimation runs automatically in the `n1-start` pipeline (after plan for complex tasks, after brainstorm for simple tasks) and writes to the tracker's time field (Jira `originalEstimate`, YouTrack `Estimation`). Use `/n1:n1-estimate` standalone to estimate without running the full pipeline.
 
 ## How It Works
 
@@ -147,6 +174,7 @@ Per-ticket memory lives in `.n1/memory/<ticket-id>/` with semantic-named files a
 | analysis | `ticket.md` | `analysis.md` |
 | brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
 | plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
+| estimation | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` (if exists) | `overview.md` |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
