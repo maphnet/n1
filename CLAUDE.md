@@ -67,6 +67,7 @@ Skills are lightweight controllers that delegate all heavy work:
 | n1-pr | tech-writer agent + inline git/gh/MCP | Doc update, push, create PR, update tracker |
 | n1-ci | developer agent + inline gh CLI | Post-PR CI watch, classify failures, fix loop |
 | n1-init | (inline: analysis + prompts) | Project setup wizard |
+| n1-estimate | product-analyst, solution-architect agents + superpowers (brainstorming) + inline estimation | Standalone estimation |
 
 Superpowers calls use the `superpowers:` prefix. Agent spawns use N1's own agent definitions. Each gets fresh context — the orchestrator never accumulates full history.
 
@@ -83,6 +84,7 @@ Each step reads ONLY its declared dependencies:
 | brainstorm | `ticket.md`, `analysis.md` | `brainstorm.md` |
 | plan | `ticket.md`, `brainstorm.md`, `analysis.md` | `plan.md` |
 | plan-review | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` | `plan.md` (in-place fixes) |
+| estimation | `ticket.md`, `analysis.md`, `brainstorm.md`, `plan.md` (if exists) | `overview.md` (estimation section) |
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
@@ -112,6 +114,15 @@ Optional two-phase enrichment that writes structured content back to the tracker
 - **Phase 2** (orchestrator, after Step 3 Brainstorm): appends refined acceptance criteria and scope boundaries to description, posts a design summary comment. Idempotency marker: `*Refined after design review — N1*`.
 
 Both phases are non-blocking — MCP failures are logged and skipped. Freshly created tickets (brain-dump/file/error-tracker modes) skip Phase 1 (adequate by construction).
+
+### Estimation
+
+Optional complexity classification and delivery time estimation. Gated on `estimation.enabled` (default false) in `n1.config.json`. When enabled, the orchestrator classifies task complexity into tiers (XS/S/M/L/XL), maps to a configurable time estimate, and writes results to overview.md + tracker ticket (description append + time field).
+
+- **Pipeline integration:** after plan for complex tasks (Step 4c), after complexity decision for simple tasks (Step 5b). Uses the best available context — plan.md when present, brainstorm.md otherwise.
+- **Standalone:** `n1-estimate` skill runs Steps 1–3 (ticket → analysis → brainstorm) then estimates. No implementation, no branch creation, no status transitions.
+- **Default mapping** in `defaults/estimation.json` (N1 repo): XS=30m, S=2h, M=6h, L=2d, XL=5d. Overridable per-project via `estimation.mapping` in config (partial overrides merge with defaults).
+- **Tracker writes:** Jira `originalEstimate` via `editJiraIssue`, YouTrack `Estimation` field via `update_issue`. Both non-blocking. Idempotency marker: `*Estimated by N1*`.
 
 ### Error Tracking Routing
 
