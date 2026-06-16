@@ -75,8 +75,6 @@ json_ops() {
         | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g' || true
 }
 
-KNOWN_TRACKER_MCPS="youtrack jira-ideomllc jira-velosity plugin_atlassian_atlassian"
-
 if [ ! -f "$CONFIG_FILE" ]; then
     context="N1 plugin is available but not configured for this project. Run /n1:n1-init to set up."
     escaped_context=$(escape_for_json "$context")
@@ -100,29 +98,14 @@ error_mcp=$(json_val '.errorTracking.mcp' "$CONFIG_FILE")
 error_ops=$(json_ops '.errorTracking.operations' "$CONFIG_FILE")
 
 if [ -n "$tracker_mcp" ]; then
-    exclude_list=""
-    for known in $KNOWN_TRACKER_MCPS; do
-        if [ "$known" != "$tracker_mcp" ]; then
-            if [ -n "$exclude_list" ]; then
-                exclude_list="${exclude_list}, ${known}"
-            else
-                exclude_list="$known"
-            fi
-        fi
-    done
-
     context="${context}
 
 TRACKER ROUTING (from .n1/n1.config.json — authoritative, do not override):
 - Type: ${tracker_type}
 - MCP server: ${tracker_mcp}
 - All tracker MCP tool calls MUST use prefix: mcp__${tracker_mcp}__
+- NEVER use any other MCP server for tracker operations, even if other tracker-like servers are visible in the tool list
 - Operations: ${tracker_ops}"
-
-    if [ -n "$exclude_list" ]; then
-        context="${context}
-- NEVER use any other MCP server (e.g. ${exclude_list}) for tracker operations"
-    fi
 fi
 
 if [ -n "$error_mcp" ]; then
@@ -131,6 +114,7 @@ if [ -n "$error_mcp" ]; then
 ERROR TRACKING ROUTING (from .n1/n1.config.json — authoritative, do not override):
 - MCP server: ${error_mcp}
 - All error tracking MCP tool calls MUST use prefix: mcp__${error_mcp}__
+- NEVER use any other MCP server for error tracking operations
 - Operations: ${error_ops}"
 fi
 
