@@ -68,7 +68,7 @@ TRACKER ROUTING (from .n1/n1.config.json — authoritative, do not override):
 - When `tracker.mcp` is `null`, only the first line is output (no routing block).
 - Error tracking routing is also included if configured — same pattern.
 
-**Negative instruction generation:** The hook maintains a static list of known tracker MCP server name patterns: `youtrack`, `jira-*`, `plugin_atlassian_atlassian`. It emits all entries that do NOT match the configured `tracker.mcp` value as the "never use" list. This is a maintenance-light approach — the list only grows when N1 adds support for a new tracker type or a new MCP server naming convention appears. If the list is empty after exclusion (only one tracker server known), the "NEVER use" line is omitted.
+**Negative instruction:** A generic "NEVER use any other MCP server for tracker operations, even if other tracker-like servers are visible in the tool list" line. No hardcoded server names — MCP server names are user-configured and should not be baked into the hook.
 
 ### 3. Explicit Conditionals in n1-start Skill Spec
 
