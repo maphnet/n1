@@ -631,7 +631,7 @@ mkdir -p .n1/telemetry
 
 1. Run `git config --global core.excludesFile` to get the global excludes file path.
    - If a path is returned AND the file exists, check whether it contains a line matching `.n1/` or `.n1`.
-2. If not found globally, check `.gitignore` in the project root for a line matching `.n1/` or `.n1`.
+2. If `.n1/` was not found in the global excludes file (or no global excludes file exists), check `.gitignore` in the project root for a line matching `.n1/` or `.n1`.
 
 **If already gitignored:**
 - Found globally → tell the user: "`.n1/` is already gitignored globally via `<path>`." Move on.
@@ -674,7 +674,7 @@ mkdir -p .n1/telemetry
      Tell the user: "Created `~/.gitignore_global`, configured git to use it, and added `.n1/`."
    - **2 (No):** Fall through to project-level append below.
 
-**If 2 (Project-level)** or fell through from global:
+**If 2 (Project-level) from the main prompt**, or fell through from the global sub-prompt:
 
 ```bash
 # only if .n1 entry not already present in .gitignore:
