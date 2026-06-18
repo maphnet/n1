@@ -625,12 +625,63 @@ mkdir -p .n1/decisions
 mkdir -p .n1/telemetry
 ```
 
-**`.gitignore`** — append `.n1/` if not already present:
+**`.gitignore` configuration** — detect existing coverage, then ask the user:
+
+**Detection (run in order):**
+
+1. Run `git config --global core.excludesFile` to get the global excludes file path.
+   - If a path is returned AND the file exists, check whether it contains a line matching `.n1/` or `.n1`.
+2. If not found globally, check `.gitignore` in the project root for a line matching `.n1/` or `.n1`.
+
+**If already gitignored:**
+- Found globally → tell the user: "`.n1/` is already gitignored globally via `<path>`." Move on.
+- Found in project `.gitignore` → tell the user: "`.n1/` is already gitignored in this project's `.gitignore`." Move on.
+
+**If NOT gitignored anywhere**, ask:
+
+```
+.n1/ directory is not gitignored. Where would you like to add it?
+1 — Globally (user-scoped gitignore, applies to all repos)
+2 — Project-level (.gitignore in this repo)
+```
+
+**If 1 (Global):**
+
+1. Run `git config --global core.excludesFile`.
+2. **If set** → append the entry to that file (with duplicate check):
+   ```bash
+   # only if .n1 entry not already present in the file:
+   echo "" >> "<excludesFile>"
+   echo "# N1 plugin state" >> "<excludesFile>"
+   echo ".n1/" >> "<excludesFile>"
+   ```
+   Tell the user: "Added `.n1/` to global gitignore (`<path>`)."
+3. **If NOT set** → sub-prompt:
+   ```
+   No global gitignore is configured (core.excludesFile is unset).
+   Want me to create ~/.gitignore_global and configure git to use it?
+   1 — Yes
+   2 — No (fall back to project-level)
+   ```
+   - **1 (Yes):**
+     ```bash
+     touch ~/.gitignore_global
+     git config --global core.excludesFile ~/.gitignore_global
+     echo "# N1 plugin state" >> ~/.gitignore_global
+     echo ".n1/" >> ~/.gitignore_global
+     ```
+     Tell the user: "Created `~/.gitignore_global`, configured git to use it, and added `.n1/`."
+   - **2 (No):** Fall through to project-level append below.
+
+**If 2 (Project-level)** or fell through from global:
+
 ```bash
+# only if .n1 entry not already present in .gitignore:
 echo "" >> .gitignore
 echo "# N1 plugin state" >> .gitignore
 echo ".n1/" >> .gitignore
 ```
+Tell the user: "Added `.n1/` to this project's `.gitignore`."
 
 ## Confirm
 
@@ -651,7 +702,7 @@ Created:
   .n1/decisions/
   .n1/telemetry/
   .claude/settings.json updated (if pinning configured)
-  .gitignore updated
+  .gitignore configured (global or project-level)
 
 Next: Use /n1:n1-start <ticket-or-description> to begin working on a task.
 ```
