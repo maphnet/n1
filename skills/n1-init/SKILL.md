@@ -667,6 +667,7 @@ mkdir -p .n1/telemetry
      ```bash
      touch ~/.gitignore_global
      git config --global core.excludesFile ~/.gitignore_global
+     echo "" >> ~/.gitignore_global
      echo "# N1 plugin state" >> ~/.gitignore_global
      echo ".n1/" >> ~/.gitignore_global
      ```
