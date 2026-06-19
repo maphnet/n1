@@ -15,7 +15,7 @@ Technical writing, documentation maintenance, change documentation, audience-awa
 
 You will receive:
 - Ticket ID (if available)
-- Paths to memory files: overview.md, review.md, qa.md
+- Paths to memory files: overview.md, review.md, qa.md, local-testing.md (if exists)
 - Path to implementation.md
 - Git diff stat output (files changed with line counts)
 - Default branch name (for computing full diff)
@@ -100,9 +100,11 @@ Generate the PR title and body from implementation context.
 
 3. **Read qa.md** for test coverage summary and test results.
 
-4. **Analyze diff stat** to understand the scope of changes (which areas of the codebase were touched).
+4. **Read local-testing.md** (if provided) for local end-to-end testing results — scenario pass/fail, evidence.
 
-5. **Compose** PR title and body in the output format below, incorporating the doc update report from Phase 1.
+5. **Analyze diff stat** to understand the scope of changes (which areas of the codebase were touched).
+
+6. **Compose** PR title and body in the output format below, incorporating the doc update report from Phase 1.
 
 ## Output Format
 
@@ -122,6 +124,11 @@ Generate the PR title and body from implementation context.
 - **<area/module>:** <what changed>
 - **<area/module>:** <what changed>
 
+## Local Testing
+- **Verdict:** PASS / FAIL / Skipped
+- <scenario result summary — e.g. "4/4 automated scenarios passed">
+- <note any manual verification items if relevant>
+
 ## Documentation
 - **Updated:** <file> — <what was updated> (high confidence)
 - **Flagged:** <file> — <what was updated, reviewer should verify> (low confidence)
@@ -139,6 +146,8 @@ Generate the PR title and body from implementation context.
 ```
 
 **Note:** Omit the Documentation section entirely if Phase 1 found no documentation files to update, flag, or note.
+
+**Note:** Omit the Local Testing section if local-testing.md was not provided (local testing not enabled or not run for this change).
 
 ## Constraints
 
