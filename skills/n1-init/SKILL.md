@@ -667,7 +667,11 @@ Create all files:
 {
   "version": "0.2.0",
   "tracker": { ... },
-  "git": { ... },
+  "git": {
+    "defaultBranch": "<detected>",
+    "branchPattern": "<from tracker setup or feature/{slug}>",
+    "draftPR": true
+  },
   "ticketTagging": { ... },
   "errorTracking": null,
   "estimation": {
