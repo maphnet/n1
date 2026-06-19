@@ -260,6 +260,45 @@ Detect **defaultBranch** automatically:
 }
 ```
 
+## Draft PR Configuration
+
+Ask whether N1 should create PRs as drafts. **Default is Yes.**
+
+```
+Create PRs as drafts by default?
+1 — Yes (default)
+2 — No
+```
+
+**If 1 (Yes) or default:**
+```json
+{
+  "git": {
+    "draftPR": true
+  }
+}
+```
+
+**If 2 (No):**
+```json
+{
+  "git": {
+    "draftPR": false
+  }
+}
+```
+
+### On reconfiguration (n1-init re-run):
+
+If `git.draftPR` already exists in the config, show current value and offer:
+```
+Draft PRs: <true/false>
+1 — Keep current
+2 — Toggle
+```
+- **1** → leave unchanged.
+- **2** → flip the boolean.
+
 ## Ticket Tagging Configuration
 
 Ask whether to tag N1-created tickets with a service (repo) name. **Default is No** — do not enable unless the user opts in.
