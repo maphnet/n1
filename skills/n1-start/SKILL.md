@@ -1,6 +1,6 @@
 ---
 name: n1-start
-description: "Core orchestrator. Start working on a task: /n1:n1-start TRID-510 or /n1:n1-start need CSV export for users. Handles the full cycle: ticket → analysis → brainstorm → plan → implement → QA → review → PR."
+description: "Core orchestrator. Start working on a task: /n1:n1-start TRID-510 or /n1:n1-start need CSV export for users. Handles the full cycle: ticket → analysis → brainstorm → plan → implement → QA → review → [local testing] → PR."
 argument-hint: "<ticket-id or brain dump>"
 model: inherit
 ---
@@ -646,7 +646,7 @@ Pass to subagent-driven-development:
 - If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) For a structural binding rather than a text instruction, set the `CLAUDE_CODE_SUBAGENT_MODEL` environment variable to `<model>` around the SDD dispatch — it is the documented highest-precedence override for subagent model selection and binds even when SDD spawns its own subagents. Fall back to the text instruction only if the env var cannot be set.
 
 **SDD overrides (IMPORTANT):**
-- **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 9). STOP at the last completed task and hand control back to the N1 orchestrator.
+- **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 10). STOP at the last completed task and hand control back to the N1 orchestrator.
 - **Workspace isolation is already satisfied** — N1 created the working branch in Step 1 (see Working Branch). Treat SDD's `superpowers:using-git-worktrees` prerequisite as ALREADY MET: do NOT create a new worktree or switch branches. Work on the current branch directly, so SDD's commits land there, never on the default branch.
 - Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
 - Run in CONTINUOUS mode: do NOT pause between tasks to ask for user approval or feedback. Execute all plan tasks sequentially without stopping. The only valid reasons to stop are: (1) a blocker you cannot resolve from context, (2) a decision that hits the "Low confidence + High blast radius" escalation threshold below, or (3) all tasks complete.
@@ -948,7 +948,7 @@ After developer returns:
 
 **Cleanup guarantee:** cleanup runs after EVERY execution attempt, including failed ones. No orphan containers or processes between fix cycles.
 
-### 9. PR CREATION
+### 10. PR CREATION
 
 **REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
 
@@ -962,7 +962,7 @@ After PR is created:
 
 **CHECKPOINT:** "PR created at <URL>. Ready for Tech Lead review."
 
-### 10. CI WATCH (conditional)
+### 11. CI WATCH (conditional)
 
 Read `.n1/n1.config.json` → check `ciChecks.enabled` (default: `true`).
 
@@ -981,7 +981,7 @@ The n1-ci skill receives the PR number from the PR creation step above. It:
 - If user chose "skip" (CI still red) → continue to FINALIZE with CI status noted
 - If user is still providing guidance → wait (n1-ci handles the interaction)
 
-### 11. FINALIZE MEMORY
+### 12. FINALIZE MEMORY
 
 Update overview.md:
 - All checkboxes checked
