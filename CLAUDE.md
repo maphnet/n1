@@ -53,6 +53,7 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 - No Co-Authored-By trailers in commits
 - **Timestamps:** Never let the model invent a timestamp — it has no clock and will hallucinate (e.g. drifting `+1h` on each rewrite). Date-only needs (spec/plan filenames `YYYY-MM-DD`) use the harness-injected `currentDate`. Precise time (time-of-day, durations) must come from the `date` command, e.g. `date -u +%Y-%m-%dT%H:%M:%SZ`. Don't add timestamp fields unless something actually reads them — file mtime already records "last modified".
 - **Test & benchmark artifacts:** Tests/benchmarks that verify committed implementation (unit, integration, e2e tied to acceptance criteria) go in the repo and run in CI. Throwaway probes that only answer a current question (approach micro-benchmarks, repro scripts, viability spikes) go under `.n1/` (gitignored) — per-ticket `.n1/memory/<ID>/{benchmarks,tests}/`, or `.n1/scratch/{benchmarks,tests}/` when there is no ticket memory. When unsure, default to scratch. Bound into the `solution-architect`, `developer`, and `qa-engineer` personas; concrete paths are passed by the skills at spawn time.
+- **Design specs:** `docs/superpowers/specs/` is gitignored. Design specs produced by brainstorming are working documents — leave them untracked, do not commit or force-add.
 
 ## Architecture
 
@@ -88,7 +89,9 @@ Each step reads ONLY its declared dependencies:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | `overview.md` (updates) |
+| local-test-analysis | `ticket.md`, `implementation.md`, `plan.md`/`brainstorm.md` | `local-test-plan.md` |
+| local-test-execution | `local-test-plan.md`, `implementation.md` | `local-testing.md` |
+| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md`, `local-testing.md` (if exists) | `overview.md` (updates) |
 | ci | `overview.md`, `plan.md`, `implementation.md` | `overview.md` (CI status) |
 
 ### Tracker Routing
@@ -123,6 +126,8 @@ Optional complexity classification and delivery time estimation. Gated on `estim
 - **Standalone:** `n1-estimate` skill runs Steps 1–3 (ticket → analysis → brainstorm) then estimates. No implementation, no branch creation, no status transitions.
 - **Default mapping** in `defaults/estimation.json` (N1 repo): XS=30m, S=2h, M=6h, L=2d, XL=5d. Overridable per-project via `estimation.mapping` in config (partial overrides merge with defaults).
 - **Tracker writes:** Jira `originalEstimate` via `editJiraIssue`, YouTrack `Estimation` field via `update_issue`. Both non-blocking. Idempotency marker: `*Estimated by N1*`.
+
+When `localTesting.enabled` is true, n1-start runs a local end-to-end testing phase (Step 9) after Review and before PR. Solution-architect produces a test plan, user approves, developer executes. Bounded fix loop: `localTesting.maxFixAttempts` (default 3). Off by default; configured by `n1-init`.
 
 ### Error Tracking Routing
 
