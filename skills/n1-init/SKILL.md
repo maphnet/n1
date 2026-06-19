@@ -786,6 +786,7 @@ Ticket tagging: payments-api / disabled
 Error tracking: Sentry (my-backend @ my-org) / disabled
 Estimation: enabled (default mapping) / enabled (custom mapping) / disabled
 Local testing: enabled / disabled
+Draft PRs: enabled / disabled
 
 Created:
   .n1/n1.config.json
