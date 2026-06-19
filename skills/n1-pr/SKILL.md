@@ -125,6 +125,22 @@ Present the generated title and body to the user. Ask: **"Create PR with this co
 
 ## Step 4: Push and Create PR
 
+Read `git.draftPR` from `.n1/n1.config.json`. Treat an absent key as `true`.
+
+If `git.draftPR` is `true` (or absent):
+
+```bash
+git push -u origin ${CURRENT_BRANCH}
+
+gh pr create \
+  --title "<generated title>" \
+  --body "<generated body>" \
+  --base ${DEFAULT_BRANCH} \
+  --draft
+```
+
+If `git.draftPR` is `false`:
+
 ```bash
 git push -u origin ${CURRENT_BRANCH}
 
