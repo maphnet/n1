@@ -291,6 +291,7 @@ step: ticket
 qa_fix_cycle: 0
 review_fix_cycle: 0
 clean_passes: 0
+local_test_fix_cycle: 0
 ---
 
 # <ID>: <Title>
@@ -304,6 +305,7 @@ clean_passes: 0
 - [ ] Implementation
 - [ ] QA
 - [ ] Review
+- [ ] Local Testing
 - [ ] PR
 - [ ] CI
 
