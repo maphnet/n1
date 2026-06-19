@@ -105,7 +105,7 @@ Heals state that leaked under a provisional slug before the final `<ID>` was kno
 
 Check if `.n1/memory/<input>/overview.md` exists:
 
-- **If exists:** Read the overview frontmatter to determine current step. Run **Ensure Working Branch(`<ID>`)** (see Working Branch above) to re-check out the branch — this covers resuming from `main` or a different branch. Then resume from where work left off: read the dependency files for the current step (see dependency map below) and continue. **Also read the loop counters** (`qa_fix_cycle`, `review_fix_cycle`, `clean_passes`, and `ci_fix_cycle` if present) so bounded loops resume at their true count, not zero (see Loop-Counter Durability below).
+- **If exists:** Read the overview frontmatter to determine current step. Run **Ensure Working Branch(`<ID>`)** (see Working Branch above) to re-check out the branch — this covers resuming from `main` or a different branch. Then resume from where work left off: read the dependency files for the current step (see dependency map below) and continue. **Also read the loop counters** (`qa_fix_cycle`, `review_fix_cycle`, `clean_passes`, `local_test_fix_cycle`, and `ci_fix_cycle` if present) so bounded loops resume at their true count, not zero (see Loop-Counter Durability below).
 - **If not exists:** Fresh start. Create `.n1/memory/<ID>/` directory.
 
 ### Step dependency map
@@ -121,14 +121,17 @@ Check if `.n1/memory/<input>/overview.md` exists:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md` | — |
+| local-test-analysis | `ticket.md`, `implementation.md`, `plan.md` or `brainstorm.md`, codebase | `local-test-plan.md` |
+| local-test-execution | `local-test-plan.md`, `implementation.md` | `local-testing.md` |
+| local-test-fix | `local-testing.md`, `local-test-plan.md`, `implementation.md` | code fixes, then re-execution |
+| pr | `overview.md`, `review.md`, `qa.md`, `implementation.md`, `local-testing.md` (if exists) | — |
 | ci | `overview.md`, `plan.md`, `implementation.md` | `overview.md` (CI status) |
 
 Each step reads ONLY the files listed in its dependency column, not the full history.
 
 ### Loop-counter durability & crash-safe checkpointing
 
-- **Loop counters live in overview frontmatter**, never only in orchestrator context: `qa_fix_cycle`, `review_fix_cycle`, `clean_passes` (and `ci_fix_cycle`, owned by n1-ci). Increment them in the file as each loop turns and read them back on resume. A bound held only in context resets to zero on restart, silently defeating it.
+- **Loop counters live in overview frontmatter**, never only in orchestrator context: `qa_fix_cycle`, `review_fix_cycle`, `clean_passes`, `local_test_fix_cycle` (and `ci_fix_cycle`, owned by n1-ci). Increment them in the file as each loop turns and read them back on resume. A bound held only in context resets to zero on restart, silently defeating it.
 - **Overview is the single source of truth for progress.** Each step writes its output file FIRST, then updates `step:`/checkbox in overview LAST. On resume, a step counts as done only if overview says so. If a crash lands between the two writes (output file exists but overview still points at the prior step), re-running is safe because every artifact write is a full overwrite — idempotent, never an append.
 
 **Dependency integrity guard (applies to every step).** Before spawning a step's agent or sub-skill, verify each of that step's declared dependency files exists and is non-empty. If any is missing or empty — a realistic state when resuming from an arbitrary step — **STOP and report which file is missing rather than proceeding** with a degraded handoff. Do not let an agent improvise around an absent `implementation.md` or an empty `analysis.md`. (`ticket.md` with no acceptance criteria is handled upstream by product-analyst and is not a hard stop.)
