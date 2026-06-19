@@ -506,6 +506,53 @@ Current estimation:
 - **3** → set `enabled: false`. Remove `writeToTracker` and `mapping` keys.
 - **4** → show current mapping (merged with defaults), ask for changes. Only store overridden tiers.
 
+## Local Testing Configuration
+
+Ask whether N1 should run local end-to-end tests after implementation and review, before creating a PR. **Default is No.**
+
+```
+Enable local testing?
+After implementation + review, N1 can start your app locally and exercise the changed flows before creating a PR.
+Requires the app to be startable from the command line.
+1 — Yes
+2 — No (default)
+```
+
+**If 2 (No) or default:**
+```json
+{
+  "localTesting": {
+    "enabled": false
+  }
+}
+```
+
+**If 1 (Yes):**
+```json
+{
+  "localTesting": {
+    "enabled": true,
+    "maxFixAttempts": 3
+  }
+}
+```
+
+### On reconfiguration (n1-init re-run):
+
+If `localTesting` already exists in the current config, show current state and offer:
+```
+Current local testing:
+  enabled → <true/false>
+  maxFixAttempts → <value>
+
+1 — Keep current
+2 — Enable
+3 — Disable
+```
+- **1** → leave unchanged.
+- **2** → set `enabled: true`, `maxFixAttempts: 3`.
+- **3** → set `enabled: false`. Remove `maxFixAttempts` key.
+
 ## Review Configuration
 
 Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless they explicitly requested review customization when invoking n1-init.
@@ -585,6 +632,9 @@ Create all files:
   "ticketTagging": { ... },
   "errorTracking": null,
   "estimation": {
+    "enabled": false
+  },
+  "localTesting": {
     "enabled": false
   },
   "escalation": {
@@ -696,6 +746,7 @@ Branch pattern: {prefix}-{id}
 Ticket tagging: payments-api / disabled
 Error tracking: Sentry (my-backend @ my-org) / disabled
 Estimation: enabled (default mapping) / enabled (custom mapping) / disabled
+Local testing: enabled / disabled
 
 Created:
   .n1/n1.config.json
