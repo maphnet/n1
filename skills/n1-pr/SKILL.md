@@ -44,6 +44,7 @@ Read from `.n1/memory/<ticket-id>/`:
 - `overview.md` — ticket title, status, key decisions
 - `review.md` — review results (confirm review passed)
 - `qa.md` — test coverage report
+- `local-testing.md` — local testing results (if exists, skip if not)
 
 ### N1 config:
 Read `.n1/n1.config.json` for:
@@ -114,7 +115,7 @@ Resolve model for `tech-writer`.
 
 Spawn tech-writer with:
 - Ticket ID (extracted from branch name, if available)
-- Paths to memory files: `overview.md`, `review.md`, `qa.md`
+- Paths to memory files: `overview.md`, `review.md`, `qa.md`, `local-testing.md` (if exists)
 - Git diff stat output from Step 1
 - Doc update report from Step 2 Phase 1 (updated/flagged/needs_review lists) — for the Documentation section in the PR body
 
