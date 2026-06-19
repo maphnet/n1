@@ -98,13 +98,38 @@ Generate the PR title and body from implementation context.
 
 2. **Read review.md** for review results — what was found and fixed during review.
 
-3. **Read qa.md** for test coverage summary and test results.
+3. **Read qa.md** for test coverage summary and verification steps.
 
 4. **Read local-testing.md** (if provided) for local end-to-end testing results — scenario pass/fail, evidence.
 
-5. **Analyze diff stat** to understand the scope of changes (which areas of the codebase were touched).
+5. **Merge verification items.** If local-testing.md was provided, build the unified verification checklist:
 
-6. **Compose** PR title and body in the output format below, incorporating the doc update report from Phase 1.
+   **a. Match items.** For each local testing scenario, find the QA verification step that describes the same behavior (e.g., QA "Create user via API returns 201" matches local "Create user — POST /api/users, expected 201"). When uncertain whether two items match, do NOT merge them — keeping a near-duplicate is better than incorrectly marking a QA item as verified by the wrong scenario.
+
+   **b. Apply results to matched items:**
+   - Matched + PASS → `- [x] <QA description> *(locally verified — <evidence>)*`
+   - Matched + FAIL → `- [ ] <QA description> *(local testing: FAILED — <detail>)*`
+
+   **c. Collect unmatched items:**
+   - Unmatched QA items → `- [ ] <description>` (no annotation)
+   - Unmatched local scenarios: PASS → `- [x] <description> *(locally verified — <evidence>)*`, FAIL → `- [ ] <description> *(local testing: FAILED — <detail>)*`
+   - Manual checklist items from local testing → `- [ ] <description> *(manual check)*`
+
+   **d. Order the final list:**
+   1. Locally verified (checked) — what's already proven
+   2. Failed (unchecked with failure detail) — known issues
+   3. Unverified (unchecked, no annotation) — reviewer needs to check
+   4. Manual check items — human judgment required
+
+   **e. Compute summary line.** Count automated scenarios from local-testing.md (exclude manual items). Determine verdict:
+   - All pass → `Local testing: PASS — N/N automated scenarios passed`
+   - Some fail → `Local testing: FAIL — X/N automated scenarios passed, Y failed`
+
+   If local-testing.md was NOT provided, skip this step entirely — all QA items become plain unchecked checkboxes with no summary line.
+
+6. **Analyze diff stat** to understand the scope of changes (which areas of the codebase were touched).
+
+7. **Compose** PR title and body in the output format below, incorporating the doc update report from Phase 1.
 
 ## Output Format
 
@@ -124,19 +149,19 @@ Generate the PR title and body from implementation context.
 - **<area/module>:** <what changed>
 - **<area/module>:** <what changed>
 
-## Local Testing
-- **Verdict:** PASS / FAIL / Skipped
-- <scenario result summary — e.g. "4/4 automated scenarios passed">
-- <note any manual verification items if relevant>
+## Verification
+
+Local testing: PASS — N/N automated scenarios passed
+
+- [x] <description> *(locally verified — <evidence>)*
+- [ ] <description> *(local testing: FAILED — <detail>)*
+- [ ] <description>
+- [ ] <description> *(manual check)*
 
 ## Documentation
 - **Updated:** <file> — <what was updated> (high confidence)
 - **Flagged:** <file> — <what was updated, reviewer should verify> (low confidence)
 - **Needs review:** <file> — <why this may need manual update> (skipped)
-
-## Test Plan
-- [ ] <verification step from QA report>
-- [ ] <verification step>
 
 ## Review Notes
 <anything reviewers should pay attention to — architectural decisions, trade-offs, areas of uncertainty>
@@ -147,7 +172,14 @@ Generate the PR title and body from implementation context.
 
 **Note:** Omit the Documentation section entirely if Phase 1 found no documentation files to update, flag, or note.
 
-**Note:** Omit the Local Testing section if local-testing.md was not provided (local testing not enabled or not run for this change).
+**Note:** The `## Verification` section is always included. When local-testing.md was provided, include the summary line at top and apply evidence/failure/manual-check annotations per the merge rules in step 5. When local-testing.md was NOT provided, omit the summary line and all annotations — list QA items as plain unchecked checkboxes:
+
+```markdown
+## Verification
+
+- [ ] <QA verification step>
+- [ ] <QA verification step>
+```
 
 ## Constraints
 
