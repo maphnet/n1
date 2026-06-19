@@ -11,7 +11,7 @@ Russian is prohibited in any committed file.
 
 ## What This Is
 
-N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, PR). It uses a **hybrid delegation model**: 8 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^5.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, [local testing], PR). It uses a **hybrid delegation model**: 8 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^5.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
 
 ## Stack
 
@@ -91,6 +91,7 @@ Each step reads ONLY its declared dependencies:
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
 | local-test-analysis | `ticket.md`, `implementation.md`, `plan.md`/`brainstorm.md` | `local-test-plan.md` |
 | local-test-execution | `local-test-plan.md`, `implementation.md` | `local-testing.md` |
+| local-test-fix | `local-testing.md`, `local-test-plan.md`, `implementation.md` | code fixes, then re-execution |
 | pr | `overview.md`, `review.md`, `qa.md`, `implementation.md`, `local-testing.md` (if exists) | `overview.md` (updates) |
 | ci | `overview.md`, `plan.md`, `implementation.md` | `overview.md` (CI status) |
 
