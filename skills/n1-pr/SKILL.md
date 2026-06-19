@@ -186,6 +186,21 @@ If N1 memory exists for this ticket:
 
 ## Step 7: Report
 
+When `git.draftPR` is `true` (or absent), the PR URL line is **bolded** to surface draft state:
+
+```
+**PR created (draft):** <PR_URL>
+PR #: <number>
+
+Title: <title>
+Base: <default branch>
+Tracker: <status updated / not configured / failed>
+
+CHECKPOINT: Ready for Tech Lead review.
+```
+
+When `git.draftPR` is `false`:
+
 ```
 PR created: <PR_URL>
 PR #: <number>
