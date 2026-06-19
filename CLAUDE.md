@@ -132,6 +132,8 @@ Optional complexity classification and delivery time estimation. Gated on `estim
 
 When `localTesting.enabled` is true, n1-start runs a local end-to-end testing phase (Step 9) after Review and before PR. Solution-architect produces a test plan, user approves, developer executes. Bounded fix loop: `localTesting.maxFixAttempts` (default 3). Off by default; configured by `n1-init`.
 
+The PR body uses a unified `## Verification` section (not separate `## Test Plan` / `## Local Testing`). The tech-writer merges QA verification steps with local testing results via best-effort semantic matching — matched items show checked/unchecked with evidence, unmatched items from either source are included as-is.
+
 ### Error Tracking Routing
 
 Optional integration with error-tracking systems (Sentry first, extensible to Datadog/Rollbar). Config-driven via `errorTracking` block in `n1.config.json` — same operations-map pattern as tracker routing. When `errorTracking` is `null` or absent, the feature is fully disabled.
