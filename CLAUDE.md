@@ -89,7 +89,7 @@ Each step reads ONLY its declared dependencies:
 | implementation | `brainstorm.md`, `plan.md` | `implementation.md` |
 | qa | `ticket.md`, `implementation.md`, `plan.md` | `qa.md` |
 | review | `ticket.md`, `brainstorm.md`, `implementation.md`, `qa.md` | `review.md` |
-| local-test-analysis | `ticket.md`, `implementation.md`, `plan.md`/`brainstorm.md` | `local-test-plan.md` |
+| local-test-analysis | `ticket.md`, `implementation.md`, `plan.md` or `brainstorm.md`, codebase | `local-test-plan.md` |
 | local-test-execution | `local-test-plan.md`, `implementation.md` | `local-testing.md` |
 | local-test-fix | `local-testing.md`, `local-test-plan.md`, `implementation.md` | code fixes, then re-execution |
 | pr | `overview.md`, `review.md`, `qa.md`, `implementation.md`, `local-testing.md` (if exists) | `overview.md` (updates) |
@@ -127,6 +127,8 @@ Optional complexity classification and delivery time estimation. Gated on `estim
 - **Standalone:** `n1-estimate` skill runs Steps 1–3 (ticket → analysis → brainstorm) then estimates. No implementation, no branch creation, no status transitions.
 - **Default mapping** in `defaults/estimation.json` (N1 repo): XS=30m, S=2h, M=6h, L=2d, XL=5d. Overridable per-project via `estimation.mapping` in config (partial overrides merge with defaults).
 - **Tracker writes:** Jira `originalEstimate` via `editJiraIssue`, YouTrack `Estimation` field via `update_issue`. Both non-blocking. Idempotency marker: `*Estimated by N1*`.
+
+### Local Testing
 
 When `localTesting.enabled` is true, n1-start runs a local end-to-end testing phase (Step 9) after Review and before PR. Solution-architect produces a test plan, user approves, developer executes. Bounded fix loop: `localTesting.maxFixAttempts` (default 3). Off by default; configured by `n1-init`.
 

@@ -916,7 +916,7 @@ After the agent returns:
   - "2 — Skip local testing, proceed to PR"
   - "3 — Abort"
 - If 1: wait for user, then re-run 9c from the beginning
-- If 2: update overview (`[x] Local Testing`, key decision: "Local Testing: skipped — environment failure"), proceed to Step 10
+- If 2: update overview (`[x] Local Testing`, set `step: local-testing`, key decision: "Local Testing: skipped — environment failure"), proceed to Step 10
 - If 3: stop
 
 #### 9d. FIX LOOP (if local testing failed)

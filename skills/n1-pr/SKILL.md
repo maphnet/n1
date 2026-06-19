@@ -184,7 +184,7 @@ CHECKPOINT: Ready for Tech Lead review.
 ## Integration
 
 **Called by:**
-- **n1-start** — after review loop passes
+- **n1-start** — after review loop passes (and local testing, when enabled)
 - **Standalone** — `/n1:n1-pr`
 
 **Invokes:**
