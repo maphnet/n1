@@ -8,7 +8,8 @@ file is not read.
 ## When to research
 
 Use web research ONLY for architectural best practices, industry standards,
-security/compliance guidance, and design patterns. Do NOT use it for
+security/compliance guidance, design patterns, and practitioner experience
+(engineering blogs, GitHub discussions, conference talks). Do NOT use it for
 library/framework **API** docs — those go through Context7 MCP (project rule).
 
 ## Trusted tiers (prefer in this order)
@@ -17,6 +18,10 @@ library/framework **API** docs — those go through Context7 MCP (project rule).
 2. Standards bodies: IETF (RFCs), W3C, ISO, OWASP, NIST, and official
    language/framework guides.
 3. Established engineering organizations and peer-reviewed / widely-cited sources.
+4. Practitioner experience: well-attributed posts on engineering blogs,
+   GitHub issues/discussions, and conference talks — useful for "what works
+   in practice" signal, but weight lower than Tiers 1-3 and always
+   corroborate against a higher-tier source.
 
 ## Reject-list (never cite as authority)
 

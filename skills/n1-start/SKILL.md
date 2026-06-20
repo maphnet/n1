@@ -328,7 +328,7 @@ Resolve model for `solution-architect`.
 Spawn the solution-architect agent with:
 - Content of `ticket.md` as the scope to analyze
 - The **Type** field extracted from `ticket.md` (bug/feature/task/improvement) — pass it explicitly so the architect knows whether to perform bug investigation
-- Directive: "Research relevant industry standards/best practices per agents/research-standards.md and include the cited Industry Standards & Best Practices section."
+- Directive: "Research relevant industry standards, best practices, and practitioner experience per agents/research-standards.md and include the cited Industry Standards & Best Practices section."
 - Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 **Error-tracking enrichment (error tracker mode only):**
@@ -519,7 +519,7 @@ State your reasoning: "This task is [simple/complex] because [reason]. [Skipping
 
 Before calling superpowers:writing-plans, spawn solution-architect again with:
 - Content of `ticket.md` and `brainstorm.md`
-- Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning. Also research applicable industry standards/best practices per agents/research-standards.md and cite them."
+- Directive: "Focus on identifying the specific files that need to change, existing patterns to follow, and integration risks. This is a second-pass deeper analysis to inform detailed planning. Also research applicable industry standards, best practices, and practitioner experience per agents/research-standards.md and cite them."
 - Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 Write output to `.n1/memory/<ID>/analysis.md` (overwrite with enriched version).
@@ -577,8 +577,8 @@ Your job is to find specific issues in these categories:
 5. BLAST RADIUS — Does the plan touch more files or systems than necessary? Could
    the same result be achieved with fewer changes?
 
-6. STANDARDS VALIDATION — Does the plan align with established industry standards
-   and best practices for this domain? Research per agents/research-standards.md:
+6. STANDARDS VALIDATION — Does the plan align with established industry standards,
+   best practices, and practitioner experience for this domain? Research per agents/research-standards.md:
    corroborate across ≥2 independent trusted sources and cite the URL for any
    deviation you flag. Apply the fitness gate — prefer decisive standards over
    contestable practices, and do not flag a "best practice" the plan correctly
