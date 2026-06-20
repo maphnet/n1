@@ -65,7 +65,7 @@ Skills are lightweight controllers that delegate all heavy work:
 |----------|-------------|---------|
 | n1-start | product-analyst, solution-architect, planner, qa-engineer agents + superpowers (brainstorming, writing-plans, SDD) | Full pipeline |
 | n1-review | code-reviewer, security-reviewer, developer agents | Review + fix loop |
-| n1-pr | tech-writer agent + inline git/gh/MCP | Doc update, push, create PR, update tracker |
+| n1-pr | tech-writer agent + inline git/gh/MCP | Doc update, push, create or skip PR, update tracker |
 | n1-ci | developer agent + inline gh CLI | Post-PR CI watch, classify failures, fix loop |
 | n1-init | (inline: analysis + prompts) | Project setup wizard |
 | n1-estimate | product-analyst, solution-architect agents + superpowers (brainstorming) + inline estimation | Standalone estimation |
@@ -181,4 +181,4 @@ Always escalate: security, architecture, public API changes.
 
 - Default branch: `main`
 - Commit style: imperative mood, English
-- **Working branch lifecycle:** `n1-start` creates the working branch eagerly in Step 1, the moment the `<ID>` is resolved (ticket ID, newly created ticket, or slug), via the idempotent "Ensure Working Branch" procedure. This guarantees implementation/QA/review commits never land on the default branch. `n1-pr` performs the single `git push -u origin <branch>` at PR time.
+- **Working branch lifecycle:** `n1-start` creates the working branch eagerly in Step 1, the moment the `<ID>` is resolved (ticket ID, newly created ticket, or slug), via the idempotent "Ensure Working Branch" procedure. This guarantees implementation/QA/review commits never land on the default branch. `n1-pr` performs the single `git push -u origin <branch>` at PR time (skipped entirely when `git.prMode` is `"skip"`).

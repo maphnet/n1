@@ -41,7 +41,7 @@ claude --plugin-dir /path/to/n1
 /n1:n1-estimate TRID-510           # estimate a ticket
 /n1:n1-review                      # review current branch (fix loop)
 /n1:n1-review #340                 # advisory review of a PR
-/n1:n1-pr                          # create a pull request
+/n1:n1-pr                          # finalize branch: docs, push, create or skip PR
 ```
 
 ## Skills
@@ -81,7 +81,7 @@ Two modes:
 
 ### `/n1:n1-pr` — Pull Request Creation
 
-Spawns tech-writer agent for PR content, pushes, creates PR via `gh`, and updates the tracker (status + comment with PR link).
+Spawns tech-writer agent for doc updates and PR content, pushes, creates PR via `gh` (or exits immediately when `prMode: "skip"`), and updates the tracker.
 
 ### `/n1:n1-init` — Project Setup
 
