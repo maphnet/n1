@@ -1,6 +1,6 @@
 ---
 name: n1-pr
-description: "Create a pull request. Collects diff, generates PR description via tech-writer agent, pushes, creates PR, and updates tracker."
+description: "Finalize the branch: update docs, push, create or skip PR based on config, and update tracker."
 model: inherit
 ---
 
@@ -30,6 +30,23 @@ DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@
 
 - **On default branch?** → "You're on the default branch. Switch to a feature branch first." **STOP.**
 - **Uncommitted changes?** → Commit them first. Summarize what's being committed and ask for confirmation.
+
+## Standalone Skip Guard
+
+Read `git.prMode` from `.n1/n1.config.json` using the fallback chain:
+1. If `git.prMode` is present → use it directly (`"draft"`, `"ready"`, or `"skip"`)
+2. Else if `git.draftPR` is `false` → treat as `"ready"`
+3. Else (key absent or `true`) → treat as `"draft"`
+
+If `prMode` is `"skip"`:
+
+```
+PR mode is set to "skip" for this project.
+No push or PR will be created.
+To change this, run /n1:n1-init to reconfigure.
+```
+
+**STOP.**
 
 ## Step 1: Collect Information
 
@@ -125,13 +142,16 @@ Present the generated title and body to the user. Ask: **"Create PR with this co
 
 ## Step 4: Push and Create PR
 
-Read `git.draftPR` from `.n1/n1.config.json`. Treat an absent key as `true`. If the value is anything other than `false`, treat it as `true`.
+Resolve `prMode` using the same fallback chain as the Standalone Skip Guard:
+1. `git.prMode` present → use it
+2. `git.draftPR` is `false` → `"ready"`
+3. Otherwise → `"draft"`
 
 ```bash
 git push -u origin ${CURRENT_BRANCH}
 ```
 
-If `git.draftPR` is `true` (or absent):
+If `prMode` is `"draft"`:
 
 ```bash
 gh pr create \
@@ -141,7 +161,7 @@ gh pr create \
   --draft
 ```
 
-If `git.draftPR` is `false`:
+If `prMode` is `"ready"`:
 
 ```bash
 gh pr create \
@@ -186,7 +206,7 @@ If N1 memory exists for this ticket:
 
 ## Step 7: Report
 
-When `git.draftPR` is `true` (or absent), the PR URL line is **bolded** to surface draft state:
+When `prMode` is `"draft"`, the PR URL line is **bolded** to surface draft state:
 
 ```
 **PR created (draft):** <PR_URL>
@@ -199,7 +219,7 @@ Tracker: <status updated / not configured / failed>
 CHECKPOINT: Ready for Tech Lead review.
 ```
 
-When `git.draftPR` is `false`:
+When `prMode` is `"ready"`:
 
 ```
 PR created: <PR_URL>
