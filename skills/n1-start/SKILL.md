@@ -98,7 +98,7 @@ Heals state that leaked under a provisional slug before the final `<ID>` was kno
 1. **If `<oldId>` == `<newId>`** → return (no-op).
 2. **Memory move:** if `.n1/memory/<oldId>/` exists AND `.n1/memory/<newId>/` does NOT → filesystem-move the directory `<oldId>/` → `<newId>/` (`.n1/` is gitignored, so a plain `mv` / `Move-Item`, NOT `git mv`). If `.n1/memory/<newId>/` already exists, skip the move and report — the `<newId>` memory is authoritative (resume/collision guard).
 3. **Frontmatter fix:** if `.n1/memory/<newId>/overview.md` exists (true only when an overview was already written under the slug and just moved — in the clean path it does not exist yet), rewrite its `ticket: <oldId>` → `ticket: <newId>` and its `# <oldId>: <Title>` heading → `# <newId>: <Title>`.
-4. **Branch rename:** compute `<oldBranch>` and `<newBranch>` from `git.branchPattern` (config). If a local branch `<oldBranch>` exists AND `<newBranch>` does NOT → `git branch -m <oldBranch> <newBranch>` (rename preserves commits; N1 has not pushed yet — push happens at PR time in `n1-pr`). If `<newBranch>` already exists, skip the rename — the subsequent Ensure Working Branch will check it out.
+4. **Branch rename:** compute `<oldBranch>` and `<newBranch>` from `git.branchPattern` (config). If a local branch `<oldBranch>` exists AND `<newBranch>` does NOT → `git branch -m <oldBranch> <newBranch>` (rename preserves commits; N1 has not pushed yet — push happens at PR time in `n1-pr`, or is skipped entirely when `git.prMode` is `"skip"`). If `<newBranch>` already exists, skip the rename — the subsequent Ensure Working Branch will check it out.
 5. Report: "Migrated memory + branch `<oldId>` → `<newId>`."
 
 ## Memory Check (Resume Support)
@@ -646,7 +646,7 @@ Pass to subagent-driven-development:
 - If config has a model override for developer, instruct: "Use model `<model>` for ALL implementer subagents, overriding SDD's own per-task Model Selection heuristic." (SP 5.1's SDD added a Model Selection section that picks the cheapest capable model per task based on how many files it touches; without this explicit instruction that heuristic silently wins over the N1 config override.) For a structural binding rather than a text instruction, set the `CLAUDE_CODE_SUBAGENT_MODEL` environment variable to `<model>` around the SDD dispatch — it is the documented highest-precedence override for subagent model selection and binds even when SDD spawns its own subagents. Fall back to the text instruction only if the env var cannot be set.
 
 **SDD overrides (IMPORTANT):**
-- **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 10). STOP at the last completed task and hand control back to the N1 orchestrator.
+- **Do NOT call `superpowers:finishing-a-development-branch` under any circumstance.** SDD's flow ends by invoking it (it is the terminal node of SDD's process graph), and it would present merge/PR/discard options that could push, open a PR, or even delete the branch — colliding with N1's own QA → Review → PR pipeline (`n1-pr` owns push and PR at Step 10, or skips both when `git.prMode` is `"skip"`). STOP at the last completed task and hand control back to the N1 orchestrator.
 - **Workspace isolation is already satisfied** — N1 created the working branch in Step 1 (see Working Branch). Treat SDD's `superpowers:using-git-worktrees` prerequisite as ALREADY MET: do NOT create a new worktree or switch branches. Work on the current branch directly, so SDD's commits land there, never on the default branch.
 - Skip the final whole-implementation code review after all tasks — N1's Review stage (Step 7) handles this with dedicated code-reviewer and security-reviewer agents. Per-task spec and code-quality reviews are kept.
 - Run in CONTINUOUS mode: do NOT pause between tasks to ask for user approval or feedback. Execute all plan tasks sequentially without stopping. The only valid reasons to stop are: (1) a blocker you cannot resolve from context, (2) a decision that hits the "Low confidence + High blast radius" escalation threshold below, or (3) all tasks complete.
@@ -949,6 +949,21 @@ After developer returns:
 **Cleanup guarantee:** cleanup runs after EVERY execution attempt, including failed ones. No orphan containers or processes between fix cycles.
 
 ### 10. PR CREATION
+
+Resolve `prMode` from `.n1/n1.config.json` using the fallback chain:
+1. If `git.prMode` is present → use it (`"draft"`, `"ready"`, or `"skip"`)
+2. Else if `git.draftPR` is `false` → treat as `"ready"`
+3. Otherwise → treat as `"draft"`
+
+**If `prMode` is `"skip"`:**
+- Do NOT invoke n1-pr
+- Do NOT push the branch
+- Update `overview.md`: check `[x] PR`, set `step: pr`, add key decision: `"PR: skipped (prMode: skip)"`
+- Report: "PR step skipped. Branch `<branch-name>` is ready — merge manually when done."
+- Skip Step 11 (CI watch) — no PR to monitor
+- Proceed to FINALIZE MEMORY
+
+**Otherwise:** invoke n1-pr as below.
 
 **REQUIRED SUB-SKILL:** Use n1:n1-pr to create the pull request.
 
