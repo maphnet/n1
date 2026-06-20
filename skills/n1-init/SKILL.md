@@ -260,44 +260,59 @@ Detect **defaultBranch** automatically:
 }
 ```
 
-## Draft PR Configuration
+## PR Mode Configuration
 
-Ask whether N1 should create PRs as drafts. **Default is Yes.**
+Ask how N1 should handle PRs. **Default is Draft.**
 
 ```
-Create PRs as drafts by default?
-1 — Yes (default)
-2 — No
+How should N1 handle PRs?
+1 — Draft (default) — create PR immediately as draft
+2 — Ready — create PR ready to merge
+3 — Skip — I merge branches manually
 ```
 
-**If 1 (Yes) or default:**
+**If 1 (Draft) or default:**
 ```json
 {
   "git": {
-    "draftPR": true
+    "prMode": "draft"
   }
 }
 ```
 
-**If 2 (No):**
+**If 2 (Ready):**
 ```json
 {
   "git": {
-    "draftPR": false
+    "prMode": "ready"
+  }
+}
+```
+
+**If 3 (Skip):**
+```json
+{
+  "git": {
+    "prMode": "skip"
   }
 }
 ```
 
 ### On reconfiguration (n1-init re-run):
 
-If `git.draftPR` already exists in the config, show current value and offer:
+If `git.prMode` already exists in the config, show its current value and offer. If only `git.draftPR` exists (legacy config), derive the display value: `true` → `"draft"`, `false` → `"ready"`.
+
 ```
-Draft PRs: <true/false>
+PR mode: <draft/ready/skip>
 1 — Keep current
-2 — Toggle
+2 — Draft (create PR as draft)
+3 — Ready (create PR immediately)
+4 — Skip (merge manually)
 ```
 - **1** → leave unchanged.
-- **2** → flip the boolean.
+- **2** → set `prMode: "draft"`.
+- **3** → set `prMode: "ready"`.
+- **4** → set `prMode: "skip"`.
 
 ## Ticket Tagging Configuration
 
@@ -670,7 +685,7 @@ Create all files:
   "git": {
     "defaultBranch": "<detected>",
     "branchPattern": "<from tracker setup or feature/{slug}>",
-    "draftPR": true
+    "prMode": "draft"
   },
   "ticketTagging": { ... },
   "errorTracking": null,
@@ -790,7 +805,7 @@ Ticket tagging: payments-api / disabled
 Error tracking: Sentry (my-backend @ my-org) / disabled
 Estimation: enabled (default mapping) / enabled (custom mapping) / disabled
 Local testing: enabled / disabled
-Draft PRs: enabled / disabled
+PR mode: draft / ready / skip
 
 Created:
   .n1/n1.config.json
