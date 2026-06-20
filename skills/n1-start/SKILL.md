@@ -979,6 +979,8 @@ After PR is created:
 
 ### 11. CI WATCH (conditional)
 
+**If `prMode` was `"skip"` (resolved in Step 10):** Skip to FINALIZE MEMORY — no PR exists to monitor.
+
 Read `.n1/n1.config.json` → check `ciChecks.enabled` (default: `true`).
 
 **If `ciChecks.enabled` is `false`:** Skip to FINALIZE MEMORY.
@@ -1001,7 +1003,7 @@ The n1-ci skill receives the PR number from the PR creation step above. It:
 Update overview.md:
 - All checkboxes checked
 - Frontmatter: `step: done`
-- Add `docs_updated` field from n1-pr's Phase 1 results (if any doc updates occurred)
+- Add `docs_updated` field from n1-pr's Phase 1 results (if any doc updates occurred; omit entirely when `prMode` was `"skip"` — n1-pr was not invoked)
 - Final status line added
 
 ## Error Recovery

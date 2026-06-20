@@ -10,7 +10,7 @@ model: inherit
 
 Create a pull request from the current feature branch. Spawns the tech-writer agent for PR content generation, then handles git push, PR creation via GitHub CLI, and tracker update.
 
-**Announce at start:** "I'm using the n1-pr skill to create a pull request."
+**Announce at start:** "I'm using the n1-pr skill to finalize the branch."
 
 ## Model Resolution
 
@@ -142,10 +142,7 @@ Present the generated title and body to the user. Ask: **"Create PR with this co
 
 ## Step 4: Push and Create PR
 
-Resolve `prMode` using the same fallback chain as the Standalone Skip Guard:
-1. `git.prMode` present → use it
-2. `git.draftPR` is `false` → `"ready"`
-3. Otherwise → `"draft"`
+Use `prMode` as already resolved by the Standalone Skip Guard above (only `"draft"` or `"ready"` reaches this step — `"skip"` exits at the Guard).
 
 ```bash
 git push -u origin ${CURRENT_BRANCH}

@@ -300,7 +300,7 @@ How should N1 handle PRs?
 
 ### On reconfiguration (n1-init re-run):
 
-If `git.prMode` already exists in the config, show its current value and offer. If only `git.draftPR` exists (legacy config), derive the display value: `true` → `"draft"`, `false` → `"ready"`.
+If `git.prMode` already exists in the config, show its current value and offer. If only `git.draftPR` exists (legacy config), derive the display value: `true` → `"draft"`, `false` → `"ready"`. If neither key exists, treat as `"draft"` (the default).
 
 ```
 PR mode: <draft/ready/skip>
@@ -313,6 +313,8 @@ PR mode: <draft/ready/skip>
 - **2** → set `prMode: "draft"`.
 - **3** → set `prMode: "ready"`.
 - **4** → set `prMode: "skip"`.
+
+When writing any of options 2–4, also remove the `git.draftPR` key if it is present in the config (it is superseded by `prMode`).
 
 ## Ticket Tagging Configuration
 
@@ -685,7 +687,7 @@ Create all files:
   "git": {
     "defaultBranch": "<detected>",
     "branchPattern": "<from tracker setup or feature/{slug}>",
-    "prMode": "draft"
+    "prMode": "<from PR Mode Configuration selection>"
   },
   "ticketTagging": { ... },
   "errorTracking": null,
