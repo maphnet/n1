@@ -17,7 +17,7 @@ N1 is a Claude Code plugin that orchestrates the full development cycle (ticket 
 
 - **Runtime:** Bash (hooks), Markdown (skills, agents) — no npm, no Node.js
 - **Plugin manifest:** `.claude-plugin/plugin.json`
-- **Dependency:** Superpowers plugin ^5.0
+- **Dependency:** Superpowers plugin >=5.0
 
 ## Testing
 
