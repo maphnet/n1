@@ -40,9 +40,10 @@ Use Grep and Glob to locate existing test files. Identify:
 
 ### Step 3: Run existing tests for changed files
 
-Read `implementation.md` to identify changed files. Find and run existing tests related to those files.
+Read `implementation.md` to identify changed files. Find and run existing tests related to those files. To detect added/removed functionality: treat any new public function, new exported symbol, new API endpoint, changed function signature, or deleted export as a functionality change.
 
 - If tests **pass** and tier is `maintain` and no functionality was added or removed → report "No test work needed" with PASS verdict. Stop here.
+- If tests **pass** and tier is `minimal` or `standard` → proceed to Step 5 (write new tests).
 - If tests **fail** → proceed to Step 4 (fix).
 - If functionality was **added or removed** that existing tests cover → proceed to Step 4 (update).
 
@@ -54,7 +55,7 @@ This step runs for ALL tiers.
 2. If functionality was removed that existing tests cover → remove or update those tests.
 3. If functionality was added that extends an existing tested interface → update existing tests to include the new cases.
 
-**Critical rule:** Pre-existing test assertions are never silently rewritten to make them pass. A failing pre-existing test is a **bug signal**, not a test problem. If a pre-existing assertion fails and the new behavior contradicts it, report the conflict — do not quietly change the assertion.
+**Critical rule:** Pre-existing test assertions are never silently rewritten to make them pass. A failing pre-existing test is a **bug signal**, not a test problem. If a pre-existing assertion fails and the new behavior contradicts it: leave the assertion unchanged, list the conflict under Defects Found, and report FAIL verdict.
 
 ### Step 5: Write new tests (minimal and standard tiers only)
 
@@ -71,7 +72,7 @@ This step runs for ALL tiers.
 - Behavioral tests per acceptance criteria
 - Edge cases: boundary values, empty/null input, maximum sizes
 - Error paths: auth failure, invalid input, network/I/O errors
-- Cap: 10 tests per file, 3 per behavioral group
+- Cap: 10 tests per test file created or modified, 3 per behavioral group (a behavioral group is one describe block covering one acceptance criterion or one interface method)
 - The real-defect gate still applies — a test within the cap that catches no real defect is still not written
 
 ### Step 6: Run the full test suite
@@ -124,6 +125,6 @@ These test patterns are **banned in all tiers**:
 - **Enforcement note:** this "tests only" boundary is currently prompt-enforced. Because `tools` is an enforced allowlist but cannot path-scope `Write`/`Bash`, the agent technically *can* write outside test paths. The recommended hardening is a PreToolUse hook restricting `Edit`/`Write` to test paths (follow-up; hooks are outside this audit's scope)
 - If a test reveals a bug in production code, report it in output but do not fix it
 - Do not over-mock — prefer integration tests when the project convention supports them
-- If the project has no existing test patterns, note this in the report and write tests using the most common framework for the detected stack
+- If the project has no existing test patterns and tier is `minimal` or `standard`, note this in the report and write tests using the most common framework for the detected stack. In `maintain` tier with no existing tests, report "No existing tests to maintain" with PASS verdict and do not create new tests.
 - Touch only test files related to the implemented feature — do not "improve" or refactor existing unrelated tests
 - **Scratch vs. committed test artifacts.** Your acceptance, edge-case, and error-path tests verify the committed implementation — commit them to the repo's test suite as usual. But a throwaway probe written only to answer a question — a spike checking whether an approach is viable, a one-off benchmark — goes under the scratch directory the orchestrator gives you (under `.n1/`, gitignored), never into the repo. When unsure whether a test protects shipped code, default to scratch.
