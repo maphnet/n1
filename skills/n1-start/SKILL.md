@@ -702,16 +702,21 @@ After implementation:
 
 Resolve model for `qa-engineer`.
 
+Read `testCoverage.tier` from `.n1/n1.config.json` (default `"maintain"` if `testCoverage` block is absent or `tier` key is missing).
+
 Spawn the qa-engineer agent with:
 - Content of `ticket.md` (acceptance criteria)
 - Content of `implementation.md` (what was built, files changed)
 - Content of `plan.md` or `brainstorm.md` (scope context)
 - The `## Key Decisions` and `## Escalations` slices of `overview.md` (NOT the whole file) — so QA knows which choices were deliberate and why, instead of re-litigating them
+- `testCoverage.tier` value
+- Directive: "You are operating in **{tier}** mode." (substitute the actual tier value)
 - Directive: "Scratch-artifact policy: write any throwaway benchmark or investigative/spike test (one that answers a current question rather than verifying committed code) under `.n1/memory/<ID>/benchmarks/` or `.n1/memory/<ID>/tests/` (both gitignored; create the directory if needed) — never into the repo's test suite. Tests that verify the implementation still go into the repo as usual. When unsure, default to scratch."
 
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/qa.md`
 - Update overview: `[x] QA`, set `step: qa`
+- **Maintain-mode skip path:** If tier is `maintain` AND QA verdict is PASS with "No test work needed" → proceed directly to Step 7 (Review). The code-reviewer still receives `qa.md` and evaluates the absence of new tests against the `maintain` tier expectation (zero new tests is correct).
 - If QA verdict is FAIL (test reveals a bug):
   - Report bug details to the user
   - Spawn developer agent (resolve model for `developer`) to fix the bug
@@ -727,7 +732,8 @@ Resolve models for both agents.
 Prepare review context (curated per reviewer, not one identical bundle):
 - **Shared:** `ticket.md`, `implementation.md`, `qa.md`, default branch name, and the `## Key Decisions` + `## Escalations` slices of `overview.md` — so neither reviewer flags a deliberate, recorded choice as a defect.
 - **code-reviewer also receives** `brainstorm.md` — design intent matters for a design-quality review.
-- **security-reviewer does NOT receive** `brainstorm.md` — the design narrative is low-signal for vulnerability scanning. Keep its context lean: acceptance criteria + changed-file list + the diff are its high-signal inputs.
+- **code-reviewer also receives** `testCoverage.tier` value (same value read in Step 6) — for Test Quality evaluation calibration.
+- **security-reviewer does NOT receive** `brainstorm.md` or `testCoverage.tier` — the design narrative and test tier are low-signal for vulnerability scanning. Keep its context lean: acceptance criteria + changed-file list + the diff are its high-signal inputs.
 
 Spawn BOTH agents simultaneously:
 - **code-reviewer** with the shared review context
@@ -738,6 +744,31 @@ After BOTH return, merge findings:
 - Prefix code-reviewer findings with [CR-N], security-reviewer with [SEC-N]
 - Combined verdict: FAIL if either reviewer returned FAIL
 - **Partial-failure handling:** if one reviewer errors, times out, or returns malformed output, retry that reviewer once. If it still fails, proceed with the other reviewer's findings, record the gap explicitly in review.md ("⚠ security-reviewer did not complete — review incomplete"), and do NOT treat the missing reviewer as a PASS.
+
+### 7b. TQ FIX LOOP (if TQ findings exist)
+
+After merging review findings, check code-reviewer output for `[TQ-N]` findings at Medium severity or above.
+
+**If no TQ findings at Medium+:** Skip to Step 8.
+
+**If TQ findings at Medium+ exist:**
+
+1. Extract the TQ findings from `review.md`
+2. Spawn **qa-engineer** (not developer) with:
+   - The TQ findings (what to fix/remove)
+   - Content of current `qa.md` (original test work)
+   - `testCoverage.tier` value
+   - Directive: "The code-reviewer flagged these test quality issues. Remove or rewrite the flagged tests. Do NOT add new tests — only fix the flagged ones."
+3. After QA returns:
+   - Update `qa.md` with the revised test work
+   - Increment `qa_fix_cycle` in overview frontmatter
+4. **If any TQ findings were High** (pre-existing assertion rewriting = potential bug): re-run code-reviewer's TQ dimension only. This is a targeted re-check of test quality, not a full code re-review. Spawn code-reviewer with:
+   - Updated `qa.md`
+   - `testCoverage.tier`
+   - Directive: "Re-evaluate Test Quality only. Check whether the TQ-High findings (assertion rewriting) were resolved. Do not re-review code quality, design, or security."
+   - If new TQ-High findings emerge, loop back to step 1
+5. **If TQ findings were Medium/Low only:** No re-review needed. Proceed to Step 8.
+6. **Bounded:** same `qa.maxFixAttempts` (config, default 3) counter as the QA bug-fix loop. On exhaustion: "After <N> QA fix cycles these TQ findings remain: [list]. Please advise."
 
 ### 8. FIX (if review failed)
 
