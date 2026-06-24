@@ -716,7 +716,7 @@ Spawn the qa-engineer agent with:
 After the agent returns:
 - Write its output to `.n1/memory/<ID>/qa.md`
 - Update overview: `[x] QA`, set `step: qa`
-- **Maintain-mode skip path:** If tier is `maintain` AND QA verdict is PASS with "No test work needed" → proceed directly to Step 7 (Review). The code-reviewer still receives `qa.md` and evaluates the absence of new tests against the `maintain` tier expectation (zero new tests is correct).
+- **Maintain-mode skip path:** If tier is `maintain` AND QA verdict is PASS with "No test work needed" → skip the QA bug-fix loop below and proceed to Step 7 (Review). The code-reviewer still receives `qa.md` and evaluates the absence of new tests against the `maintain` tier expectation (zero new tests is correct).
 - If QA verdict is FAIL (test reveals a bug):
   - Report bug details to the user
   - Spawn developer agent (resolve model for `developer`) to fix the bug
