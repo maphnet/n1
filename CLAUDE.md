@@ -40,7 +40,8 @@ Do NOT install N1 as a user-scope plugin for local development. A `file://` mark
 ### Notes for any future install/publish
 
 - A `file://` marketplace install copies from committed git **HEAD** into a cache, not the working tree. Refreshing it requires a `version` bump (in **both** `plugin.json` and `marketplace.json`, which must match) followed by `claude plugin marketplace update n1` + `claude plugin update n1@n1`.
-- The `plugin.json` schema rejects marketplace-qualified dependency names (`name@marketplace` gives `dependencies.0: Invalid input`). Use a bare name, e.g. `{ "name": "superpowers", "version": "^5.0" }`. The bare-name dependency resolver assumes the declaring plugin's own marketplace, which is why install-time dependency resolution against an external marketplace is unreliable — another reason to prefer `--plugin-dir`.
+- **Version bumps are mandatory for releases.** Any change that consumers should pick up requires a semver bump in **both** `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (values must match). Without a bump, `plugin marketplace update` sees no change and consumers stay on the old version.
+- Cross-marketplace dependencies (e.g. superpowers from `claude-plugins-official`) require `"marketplace"` in the dependency entry and `"allowCrossMarketplaceDependenciesOn"` in `marketplace.json`.
 
 ## Conventions
 
