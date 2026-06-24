@@ -43,6 +43,7 @@ Use Grep and Glob to locate existing test files. Identify:
 Read `implementation.md` to identify changed files. Find and run existing tests related to those files. To detect added/removed functionality: treat any new public function, new exported symbol, new API endpoint, changed function signature, or deleted export as a functionality change.
 
 - If tests **pass** and tier is `maintain` and no functionality was added or removed → report "No test work needed" with PASS verdict. Stop here.
+- If tests **pass** and tier is `maintain` and functionality was added or removed but NO existing tests cover the new/changed area → report "Tests pass; new functionality not covered by existing tests (maintain mode — no new tests added)" with PASS verdict. Stop here.
 - If tests **pass** and tier is `minimal` or `standard` → proceed to Step 5 (write new tests).
 - If tests **fail** → proceed to Step 4 (fix).
 - If functionality was **added or removed** that existing tests cover → proceed to Step 4 (update).

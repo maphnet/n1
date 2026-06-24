@@ -758,7 +758,7 @@ After merging review findings, check code-reviewer output for `[TQ-N]` findings 
    - The TQ findings (what to fix/remove)
    - Content of current `qa.md` (original test work)
    - `testCoverage.tier` value
-   - Directive: "The code-reviewer flagged these test quality issues. Remove or rewrite the flagged tests. Do NOT add new tests — only fix the flagged ones."
+   - Directive: "**TQ Fix Mode — skip your standard 6-step process.** The code-reviewer flagged these test quality issues. Your only task: remove or rewrite the specific tests identified in the TQ findings below. After making those changes, run the test suite to confirm no regressions. Do not follow Steps 1–5 of your normal process."
 3. After QA returns:
    - Update `qa.md` with the revised test work
    - Increment `qa_fix_cycle` in overview frontmatter
@@ -769,6 +769,8 @@ After merging review findings, check code-reviewer output for `[TQ-N]` findings 
    - If new TQ-High findings emerge, loop back to step 1
 5. **If TQ findings were Medium/Low only:** No re-review needed. Proceed to Step 8.
 6. **Bounded:** same `qa.maxFixAttempts` (config, default 3) counter as the QA bug-fix loop. On exhaustion: "After <N> QA fix cycles these TQ findings remain: [list]. Please advise."
+
+**After Step 7b completes, recompute the merged verdict:** If the original FAIL was caused solely by TQ-High findings and Step 7b resolved them (no TQ-High findings remain), AND there are no CR-Critical, CR-High, or SEC findings in `review.md`, update the merged verdict to PASS and skip Step 8. Proceed directly to Step 9 (LOCAL TESTING) or Step 10 (PR CREATION).
 
 ### 8. FIX (if review failed)
 
