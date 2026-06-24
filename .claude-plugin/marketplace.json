@@ -5,10 +5,7 @@
     {
       "name": "n1",
       "description": "AI-driven development orchestrator. No one writes the code.",
-      "source": {
-        "source": "github",
-        "repo": "maphnet/n1"
-      }
+      "source": "./"
     }
   ]
 }
