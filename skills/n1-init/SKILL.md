@@ -609,6 +609,64 @@ Current local testing:
 - **2** → set `enabled: true`, `maxFixAttempts: 3`.
 - **3** → set `enabled: false`. Remove `maxFixAttempts` key.
 
+## Test Coverage Configuration
+
+Ask what level of test work the QA agent should do. **Default is maintain** — fix and update existing tests, no new test creation.
+
+```
+Test coverage tier controls how much test work the QA agent does:
+  maintain — Fix broken tests, update tests for changed functionality. No new tests. (default)
+  minimal  — Acceptance-criteria-only behavioral tests (1-3 per feature)
+  standard — Behavioral tests + edge cases + error paths (capped)
+
+Select test coverage tier:
+1 — maintain (default)
+2 — minimal
+3 — standard
+```
+
+**If 1 (maintain) or default:**
+```json
+{
+  "testCoverage": {
+    "tier": "maintain"
+  }
+}
+```
+
+**If 2 (minimal):**
+```json
+{
+  "testCoverage": {
+    "tier": "minimal"
+  }
+}
+```
+
+**If 3 (standard):**
+```json
+{
+  "testCoverage": {
+    "tier": "standard"
+  }
+}
+```
+
+### On reconfiguration (n1-init re-run):
+
+If `testCoverage` already exists in the current config, show current state and offer:
+```
+Current test coverage tier: <current value>
+1 — Keep current
+2 — maintain
+3 — minimal
+4 — standard
+```
+- **1** → leave unchanged.
+- **2** → set `tier: "maintain"`.
+- **3** → set `tier: "minimal"`.
+- **4** → set `tier: "standard"`.
+
 ## Review Configuration
 
 Use `minCleanPasses: 1` by default. **Do NOT ask** the user about this unless they explicitly requested review customization when invoking n1-init.
@@ -696,6 +754,9 @@ Create all files:
   },
   "localTesting": {
     "enabled": false
+  },
+  "testCoverage": {
+    "tier": "maintain"
   },
   "escalation": {
     "checkpoints": ["pr"],
@@ -807,6 +868,7 @@ Ticket tagging: payments-api / disabled
 Error tracking: Sentry (my-backend @ my-org) / disabled
 Estimation: enabled (default mapping) / enabled (custom mapping) / disabled
 Local testing: enabled / disabled
+Test coverage: maintain / minimal / standard
 PR mode: draft / ready / skip
 
 Created:
