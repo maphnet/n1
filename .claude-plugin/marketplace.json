@@ -5,10 +5,9 @@
     {
       "name": "n1",
       "description": "AI-driven development orchestrator. No one writes the code.",
-      "version": "0.2.1",
       "source": {
-        "source": "url",
-        "url": "file:///C:/Dev/n1"
+        "source": "github",
+        "repo": "maphnet/n1"
       }
     }
   ]

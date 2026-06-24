@@ -1,7 +1,6 @@
 {
   "name": "n1",
   "description": "AI-driven development orchestrator. No one writes the code.",
-  "version": "0.2.1",
   "author": { "name": "N1 Team" },
   "license": "MIT",
   "dependencies": [

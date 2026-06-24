@@ -14,13 +14,16 @@ N1 orchestrates the full development cycle using 8 specialized agent personas an
 
 ## Installation
 
-Install from the Claude Code marketplace:
+Add the marketplace and install:
 
 ```
-/install-plugin n1
+/plugin marketplace add maphnet/n1
+/plugin install n1@n1
 ```
 
-Or load locally for development:
+Then enable auto-update: `/plugin` → Marketplaces → n1 → Auto-update.
+
+For local development:
 
 ```bash
 claude --plugin-dir /path/to/n1
