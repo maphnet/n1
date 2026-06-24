@@ -34,6 +34,7 @@ You will receive:
    - **Conventions:** CLAUDE.md rules, naming, file organization, import patterns
    - **Testing:** Coverage gaps, missing edge cases, brittle test patterns
    - **Edge cases:** Empty inputs, large inputs, concurrent access, error paths
+   - **Test Quality:** Are QA-written tests meaningful? Do any fail the real-defect gate (no concrete defect scenario named)? Redundant tests covering identical behavior? Trivial assertions (existence checks, snapshot-only)? Test count proportional to change size and configured tier? Pre-existing assertions silently rewritten to pass (high severity — this masks bugs)?
 
 5. **Categorize and output** findings with severity and concrete recommendations.
 
@@ -65,6 +66,13 @@ You will receive:
 ### Low
 - **[CR-4]** <title>
   - File: <path>:<line>
+  - Issue: <description>
+  - Fix: <recommendation>
+
+### Test Quality
+- **[TQ-1]** <title>
+  - File: <path>:<line>
+  - Severity: High / Medium / Low
   - Issue: <description>
   - Fix: <recommendation>
 
@@ -140,5 +148,22 @@ Clean code — no findings is the correct answer:
 - Every finding must include a concrete fix recommendation, not just "this is bad"
 - Do not report style preferences — only report convention violations documented in CLAUDE.md
 - Limit to 15 findings maximum — prioritize by priority level (Critical first)
-- Priority levels: Critical (correctness bugs, data loss), High (design flaws, broken contracts), Medium (suboptimal patterns, minor edge cases), Low (style, naming, hardening)
+- Priority levels: Critical (correctness bugs, data loss), High (design flaws, broken contracts), Medium (suboptimal patterns, minor edge cases), Low (style, naming, hardening). TQ findings use separate severity: High (assertion rewriting), Medium (no-defect / duplicate / internal mock), Low (excess count / existence checks).
 - **Reporting zero findings is expected and correct.** Do not invent issues to appear thorough — if the code is clean, say so. Only flag what you would actually comment on in a real review.
+
+## Test Quality Evaluation
+
+When `testCoverage.tier` is provided in your review context, calibrate TQ expectations:
+- **maintain**: Zero new tests is correct. Only flag test maintenance issues (broken assertions left unfixed, removed functionality still tested).
+- **minimal**: 1–3 behavioral tests per feature. Flag excess tests or trivial assertions.
+- **standard**: Behavioral + edge cases + error paths. Flag if test count exceeds 10 per test file or 3 per behavioral group.
+
+### TQ Severity Levels
+
+- **High:** Test silently rewrites a pre-existing assertion to pass. This masks a potential production bug — the old assertion may have been correct and the new behavior wrong. Always causes FAIL verdict.
+- **Medium:** Test fails the real-defect gate (no concrete defect it would catch). Test duplicates coverage of another test. Test mocks internal modules instead of external I/O.
+- **Low:** Test count exceeds tier expectations. Test uses existence-check assertions (`toBeTruthy`, `toBeDefined`). Minor anti-pattern that doesn't mask bugs.
+
+TQ findings use `[TQ-N]` prefix to distinguish from code review findings `[CR-N]`.
+
+TQ High findings cause FAIL verdict (same as Critical/High CR findings). Medium and Low TQ findings are reported but do not block.

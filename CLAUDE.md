@@ -134,6 +134,20 @@ When `localTesting.enabled` is true, n1-start runs a local end-to-end testing ph
 
 The PR body uses a unified `## Verification` section (not separate `## Test Plan` / `## Local Testing`). The tech-writer merges QA verification steps with local testing results via best-effort semantic matching — matched items show checked/unchecked with evidence, unmatched items from either source are included as-is.
 
+### Test Coverage Tiers
+
+Configurable QA behavior controlled by `testCoverage.tier` in `n1.config.json` (default `"maintain"` when absent). Three tiers:
+
+| Tier | QA behavior |
+|------|-------------|
+| **maintain** (default) | Run existing tests, fix breakage, update for changed functionality. No new tests. |
+| **minimal** | Maintain + 1–3 focused behavioral tests per feature, acceptance-criteria-only |
+| **standard** | Minimal + edge cases + error paths, capped at 10 per test file / 3 per group |
+
+Cross-tier invariants: broken tests are always fixed, tests for removed functionality are always updated, pre-existing assertions are never silently rewritten.
+
+The code-reviewer evaluates a **Test Quality (TQ)** dimension with `[TQ-N]` prefix findings. TQ-High (assertion rewriting) causes review FAIL; Medium/Low are non-blocking. A TQ fix loop (Step 7b in n1-start) spawns the QA agent to fix flagged tests before the review fix loop.
+
 ### Error Tracking Routing
 
 Optional integration with error-tracking systems (Sentry first, extensible to Datadog/Rollbar). Config-driven via `errorTracking` block in `n1.config.json` — same operations-map pattern as tracker routing. When `errorTracking` is `null` or absent, the feature is fully disabled.
@@ -160,7 +174,7 @@ Memory ID for error-tracker runs: `sentry-<issueId>` (provisional; replaced by t
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
-| qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA |
+| qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA (tier-aware: maintain/minimal/standard) |
 | tech-writer | sonnet | Read, Grep, Edit, Write, Glob | Doc update, PR content |
 
 Models default to agent frontmatter values, overridable via `models` section in `n1.config.json`.
