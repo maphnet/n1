@@ -1,6 +1,7 @@
 {
   "name": "n1",
   "owner": { "name": "maphskiy" },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
   "plugins": [
     {
       "name": "n1",
