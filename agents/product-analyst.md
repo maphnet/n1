@@ -239,3 +239,4 @@ Run this assessment AFTER fetching the ticket (step 1) but BEFORE the final dist
 - For raw text: if the input is vague, extract what you can and list gaps in Ambiguities
 - For error tracker mode: **Type** is always `bug` — error tracker issues are defects by definition
 - For error tracker mode: **Source** uses the format `<provider> issue #<id> (<url>)` (e.g., `Sentry issue #12345 (https://myorg.sentry.io/issues/12345)`)
+- **Lean output:** Carry forward only information that downstream steps need — acceptance criteria, constraints, and technical context. Don't rephrase or expand what's already clear in the original ticket. If the original description is adequate, your structured output should be comparable in length, not longer. The 600-word limit is a ceiling, not a target.
