@@ -609,6 +609,76 @@ Current local testing:
 - **2** → set `enabled: true`, `maxFixAttempts: 3`.
 - **3** → set `enabled: false`. Remove `maxFixAttempts` key.
 
+## Codex Review Configuration
+
+Ask whether N1 should use Codex for cross-model code review alongside the Claude-based reviewers. **Default is No.**
+
+```
+Enable Codex cross-model review?
+Adds a Codex-based reviewer alongside Claude reviewers for broader bug coverage.
+Requires the Codex CLI to be installed and authenticated.
+1 — Yes
+2 — No (default)
+```
+
+**If 2 (No) or default:**
+```json
+{
+  "codexReview": {
+    "enabled": false
+  }
+}
+```
+
+**If 1 (Yes):**
+
+1. Probe Codex CLI availability:
+   ```bash
+   codex --version
+   ```
+
+2. **If command fails (not installed):**
+   ```
+   Codex CLI is not installed.
+   Would you like help setting it up?
+   1 — Yes (guides you through /codex:setup)
+   2 — Skip (disable Codex review for now)
+   ```
+   - **1:** Tell the user: "Run `/codex:setup` to install and configure the Codex CLI, then re-run `/n1:n1-init` to enable Codex review." Set `codexReview.enabled: false`.
+   - **2:** Set `codexReview.enabled: false`.
+
+3. **If command succeeds (installed) — check authentication:**
+   Run `codex auth status` (or equivalent auth check). If not authenticated:
+   ```
+   Codex CLI is installed but not authenticated.
+   Run `!codex login` to authenticate, then re-run `/n1:n1-init` to enable Codex review.
+   ```
+   Set `codexReview.enabled: false`.
+
+4. **If installed and authenticated:**
+   ```json
+   {
+     "codexReview": {
+       "enabled": true
+     }
+   }
+   ```
+
+### On reconfiguration (n1-init re-run):
+
+If `codexReview` already exists in the current config, show current state and offer:
+```
+Current Codex review:
+  enabled → <true/false>
+
+1 — Keep current
+2 — Enable
+3 — Disable
+```
+- **1** → leave unchanged.
+- **2** → run the probe flow above. Set `enabled: true` only if Codex CLI is installed and authenticated.
+- **3** → set `enabled: false`.
+
 ## Test Coverage Configuration
 
 Ask what level of test work the QA agent should do. **Default is maintain** — fix and update existing tests, no new test creation.
@@ -731,6 +801,7 @@ code-reviewer      opus
 security-reviewer  opus
 qa-engineer        sonnet
 tech-writer        sonnet
+codex-adapter      sonnet
 ```
 
 ## Write Configuration and Structure
@@ -753,6 +824,9 @@ Create all files:
     "enabled": false
   },
   "localTesting": {
+    "enabled": false
+  },
+  "codexReview": {
     "enabled": false
   },
   "testCoverage": {
@@ -784,7 +858,8 @@ Create all files:
     "code-reviewer": "opus",
     "security-reviewer": "opus",
     "qa-engineer": "sonnet",
-    "tech-writer": "sonnet"
+    "tech-writer": "sonnet",
+    "codex-adapter": "sonnet"
   }
 }
 ```
@@ -868,6 +943,7 @@ Ticket tagging: payments-api / disabled
 Error tracking: Sentry (my-backend @ my-org) / disabled
 Estimation: enabled (default mapping) / enabled (custom mapping) / disabled
 Local testing: enabled / disabled
+Codex review: enabled / disabled
 Test coverage: maintain / minimal / standard
 PR mode: draft / ready / skip
 

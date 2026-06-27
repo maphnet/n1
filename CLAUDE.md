@@ -11,7 +11,7 @@ Russian is prohibited in any committed file.
 
 ## What This Is
 
-N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, [local testing], PR). It uses a **hybrid delegation model**: 8 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^5.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
+N1 is a Claude Code plugin that orchestrates the full development cycle (ticket read, analysis, brainstorm, plan, implement, QA, review, [local testing], PR). It uses a **hybrid delegation model**: 9 specialized agent personas handle autonomous work (analysis, QA, review, fixes, PR content), while [Superpowers](https://github.com/obra/superpowers) ^5.0 sub-skills handle interactive steps (brainstorming, planning, implementation dispatch via SDD). It is a **thin controller** (~5-10K tokens per skill): skills load only the memory files they need, spawn agents or invoke Superpowers, and write results back to per-ticket memory.
 
 ## Stack
 
@@ -165,7 +165,7 @@ Memory ID for error-tracker runs: `sentry-<issueId>` (provisional; replaced by t
 
 ### Agent Personas
 
-8 atomic agents with scoped tools and configurable models:
+9 atomic agents with scoped tools and configurable models:
 
 | Agent | Default Model | Tools | Pipeline Stage |
 |-------|---------------|-------|----------------|
@@ -175,6 +175,7 @@ Memory ID for error-tracker runs: `sentry-<issueId>` (provisional; replaced by t
 | developer | opus | Read, Edit, Write, Bash, Grep, Glob | Implementation, Fix cycle, CI fix |
 | code-reviewer | opus | Read, Grep, Glob | Review (parallel) |
 | security-reviewer | opus | Read, Grep, Glob | Review (parallel) |
+| codex-adapter | sonnet | (none) | Review (Codex output parsing, conditional) |
 | qa-engineer | sonnet | Read, Edit, Write, Bash, Grep, Glob | QA (tier-aware: maintain/minimal/standard) |
 | tech-writer | sonnet | Read, Grep, Edit, Write, Glob | Doc update, PR content |
 

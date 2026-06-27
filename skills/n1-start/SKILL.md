@@ -725,9 +725,9 @@ After the agent returns:
 
 ### 7. REVIEW
 
-**Spawn agents in PARALLEL:** code-reviewer + security-reviewer
+**Spawn agents in PARALLEL:** code-reviewer + security-reviewer (+ Codex reviewer if enabled)
 
-Resolve models for both agents.
+Resolve models for code-reviewer and security-reviewer.
 
 Prepare review context (curated per reviewer, not one identical bundle):
 - **Shared:** `ticket.md`, `implementation.md`, `qa.md`, default branch name, and the `## Key Decisions` + `## Escalations` slices of `overview.md` — so neither reviewer flags a deliberate, recorded choice as a defect.
@@ -735,15 +735,36 @@ Prepare review context (curated per reviewer, not one identical bundle):
 - **code-reviewer also receives** `testCoverage.tier` value (same value read in Step 6) — for Test Quality evaluation calibration.
 - **security-reviewer does NOT receive** `brainstorm.md` or `testCoverage.tier` — the design narrative and test tier are low-signal for vulnerability scanning. Keep its context lean: acceptance criteria + changed-file list + the diff are its high-signal inputs.
 
-Spawn BOTH agents simultaneously:
-- **code-reviewer** with the shared review context
-- **security-reviewer** with the shared review context
+**Codex reviewer (conditional):**
 
-After BOTH return, merge findings:
+Read `.n1/n1.config.json` → check `codexReview.enabled` (default: `false`).
+
+If `codexReview.enabled` is `true`:
+1. Probe Codex CLI availability:
+   ```bash
+   codex --version
+   ```
+   If probe fails → log `"⚠ Codex review skipped — CLI unavailable"` in review.md, proceed with CR + SEC only.
+
+2. If probe passes, spawn Codex review **in parallel** with CR + SEC:
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT_codex}/scripts/codex-companion.mjs" review --wait --scope branch
+   ```
+
+3. After Codex returns, spawn **codex-adapter** agent (resolve model for `codex-adapter`) to parse raw output into `[CX-N]` structured findings.
+
+4. **Partial-failure handling:** If Codex call errors or times out, retry once. If still fails, proceed with CR + SEC findings. Record gap in review.md: `"⚠ Codex review did not complete — review incomplete"`.
+
+Spawn all reviewers simultaneously:
+- **code-reviewer** with the code review context
+- **security-reviewer** with the security review context
+- **Codex review command** (if enabled and CLI available)
+
+After ALL return, merge findings:
 - Combine outputs into `.n1/memory/<ID>/review.md`
-- Prefix code-reviewer findings with [CR-N], security-reviewer with [SEC-N]
-- Combined verdict: FAIL if either reviewer returned FAIL
-- **Partial-failure handling:** if one reviewer errors, times out, or returns malformed output, retry that reviewer once. If it still fails, proceed with the other reviewer's findings, record the gap explicitly in review.md ("⚠ security-reviewer did not complete — review incomplete"), and do NOT treat the missing reviewer as a PASS.
+- Prefix code-reviewer findings with [CR-N], security-reviewer with [SEC-N], codex-adapter with [CX-N]
+- Combined verdict: FAIL if any reviewer returned FAIL
+- **Partial-failure handling:** if any reviewer errors, times out, or returns malformed output, retry that reviewer once. If it still fails, proceed with the remaining reviewers' findings, record the gap explicitly in review.md (e.g., "⚠ Codex review did not complete — review incomplete"), and do NOT treat the missing reviewer as a PASS.
 
 ### 7b. TQ FIX LOOP (if TQ findings exist)
 

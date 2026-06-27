@@ -58,9 +58,9 @@ Read N1 memory if available:
 
 ### Phase 2: Find Bugs
 
-**Spawn agents in PARALLEL:** code-reviewer + security-reviewer
+**Spawn agents in PARALLEL:** code-reviewer + security-reviewer (+ Codex reviewer if enabled)
 
-Resolve models for both agents.
+Resolve models for code-reviewer and security-reviewer.
 
 Prepare shared review context:
 - What was implemented (from memory or commit messages)
@@ -70,13 +70,33 @@ Prepare shared review context:
 - Base SHA: `git merge-base ${DEFAULT_BRANCH} HEAD`
 - Head SHA: current `HEAD`
 
-Spawn BOTH agents simultaneously. Each returns findings ranked by priority (Critical → High → Medium → Low).
+**Codex reviewer (conditional):**
 
-**Wait for ALL agents to complete before proceeding.**
+Read `.n1/n1.config.json` → check `codexReview.enabled` (default: `false`).
+
+If `codexReview.enabled` is `true`:
+1. Probe Codex CLI availability:
+   ```bash
+   codex --version
+   ```
+   If probe fails → log `"⚠ Codex review skipped — CLI unavailable"` in review.md, proceed with CR + SEC only.
+
+2. If probe passes, spawn Codex review **in parallel** with CR + SEC:
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT_codex}/scripts/codex-companion.mjs" review --wait --scope branch
+   ```
+
+3. After Codex returns, spawn **codex-adapter** agent (resolve model for `codex-adapter`) to parse raw output into `[CX-N]` structured findings.
+
+4. **Partial-failure handling:** If Codex call errors or times out, retry once. If still fails, proceed with CR + SEC findings. Record gap in review.md: `"⚠ Codex review did not complete — review incomplete"`.
+
+Spawn all reviewers simultaneously. Each returns findings ranked by priority (Critical → High → Medium → Low).
+
+**Wait for ALL agents/commands to complete before proceeding.**
 
 ### Phase 3: Verify Findings (False-Positive Elimination)
 
-After BOTH agents return, merge their raw findings into a single list ordered by priority.
+After ALL reviewers return, merge their raw findings into a single list ordered by priority. Findings carry their source prefix: `[CR-N]` from code-reviewer, `[SEC-N]` from security-reviewer, `[CX-N]` from codex-adapter (if Codex was enabled and succeeded).
 
 **Spawn agent:** code-reviewer (with adversarial verification prompt)
 
@@ -239,4 +259,5 @@ Do NOT apply any fixes. This is advisory only — the user decides what to do wi
 **Invokes:**
 - n1 agent: **code-reviewer** — bug finding (Phase 2) and false-positive verification (Phase 3)
 - n1 agent: **security-reviewer** — security vulnerability finding (Phase 2)
+- n1 agent: **codex-adapter** — Codex output parsing into structured `[CX-N]` findings (Phase 2, conditional on `codexReview.enabled`)
 - n1 agent: **developer** — systematic fix of confirmed findings (Phase 4, review loop mode only)
